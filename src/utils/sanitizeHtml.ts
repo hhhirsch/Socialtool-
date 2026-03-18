@@ -26,7 +26,7 @@ export function sanitizeHtml(html: string): string {
         if (
           attributeValue.startsWith('javascript:') ||
           attributeValue.startsWith('vbscript:') ||
-          attributeValue.startsWith('data:text/html')
+          attributeValue.startsWith('data:')
         ) {
           element.removeAttribute(attribute.name);
         }
