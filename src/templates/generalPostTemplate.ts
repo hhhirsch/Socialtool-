@@ -1,3 +1,6 @@
+import type { GraphicTemplate } from './types';
+import { sharedBaseCss } from './sharedBaseCss';
+
 export const generalPostTemplate: GraphicTemplate = {
   id: "general-post",
   name: "Allgemeiner Beitrag",
@@ -125,7 +128,7 @@ export const generalPostTemplate: GraphicTemplate = {
     titleLine2: "des",
     highlight: "Beitrags",
     bodyText: "Kurze Einleitung oder erste These des Beitrags. Was ist der Standpunkt?",
-    quoteText: "Pull-Quote aus dem Post — der eine Satz, der hängen bleibt.",
+    quoteText: "Pull-Quote aus dem Post - der eine Satz, der hängen bleibt.",
     publisher: "Hans Hirsch · co.faktor",
     brand: "G-BA <em>Digest</em>"
   }

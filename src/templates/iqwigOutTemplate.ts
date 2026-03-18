@@ -1,3 +1,6 @@
+import type { GraphicTemplate } from './types';
+import { sharedBaseCss } from './sharedBaseCss';
+
 export const iqwigOutTemplate: GraphicTemplate = {
   id: "iqwig-out",
   name: "IQWiG Bewertung",
@@ -146,7 +149,7 @@ export const iqwigOutTemplate: GraphicTemplate = {
     tagText: "IQWiG-Bewertung veröffentlicht · §35a SGB V",
     badgeText: "IQWiG out",
     drugName: "Wirkstoff",
-    indicationTitle: "– Indikation",
+    indicationTitle: "- Indikation",
     indicationLine: "Therapiegebiet · Setting · Population",
     timeline1Label: "IQWiG veröffentlicht",
     timeline1Value: "TT.MM.JJJJ",

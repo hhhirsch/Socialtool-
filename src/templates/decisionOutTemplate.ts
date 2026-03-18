@@ -1,3 +1,6 @@
+import type { GraphicTemplate } from './types';
+import { sharedBaseCss } from './sharedBaseCss';
+
 export const decisionOutTemplate: GraphicTemplate = {
   id: "decision-out",
   name: "Verfahren abgeschlossen",
@@ -143,7 +146,7 @@ export const decisionOutTemplate: GraphicTemplate = {
     tagText: "G-BA Beschluss · §35a SGB V",
     badgeText: "Decision out",
     drugName: "Wirkstoff",
-    indicationTitle: "– Indikation",
+    indicationTitle: "- Indikation",
     indicationLine: "Therapiegebiet · Setting · Population",
     outcomeLabel: "G-BA Bewertung",
     outcome1Tag: "Beträchtlich",
