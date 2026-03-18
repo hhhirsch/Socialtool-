@@ -1,0 +1,45 @@
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.labelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.label {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.counter,
+.help {
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 16px;
+  padding: 14px 16px;
+  font: inherit;
+  color: #0f172a;
+  background: #f8fafc;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+
+.input:focus,
+.textarea:focus {
+  outline: 2px solid rgba(37, 99, 235, 0.2);
+  border-color: #2563eb;
+  background: white;
+}

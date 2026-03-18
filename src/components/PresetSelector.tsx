@@ -1,36 +1,38 @@
 import { PRESETS } from '../constants';
+import type { Preset } from '../types';
 import styles from './PresetSelector.module.css';
 
 interface Props {
   selectedPresetId: string;
-  onSelect: (id: string) => void;
-  onClose: () => void;
+  supportedPresetIds: string[];
+  onSelect: (presetId: string) => void;
 }
 
-export function PresetSelector({ selectedPresetId, onSelect, onClose }: Props) {
+function describePreset(preset: Preset): string {
+  return `${preset.width} × ${preset.height} px`;
+}
+
+export function PresetSelector({ selectedPresetId, supportedPresetIds, onSelect }: Props) {
   return (
-    <div className={styles.overlay} onClick={onClose}>
-      <div className={styles.sheet} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.title}>LinkedIn Format wählen</div>
-        {PRESETS.map((preset) => (
+    <div className={styles.selector}>
+      {PRESETS.map((preset) => {
+        const isSelected = preset.id === selectedPresetId;
+        const isSupported = supportedPresetIds.includes(preset.id);
+
+        return (
           <button
             key={preset.id}
-            className={`${styles.option} ${selectedPresetId === preset.id ? styles.optionActive : ''}`}
-            onClick={() => {
-              onSelect(preset.id);
-              onClose();
-            }}
+            type="button"
+            className={`${styles.card} ${isSelected ? styles.cardActive : ''}`}
+            onClick={() => isSupported && onSelect(preset.id)}
+            disabled={!isSupported}
           >
-            <span>{preset.label}</span>
-            <span className={styles.dims}>
-              {preset.width}×{preset.height}
-            </span>
+            <span className={styles.label}>{preset.label}</span>
+            <span className={styles.meta}>{describePreset(preset)}</span>
+            {!isSupported && <span className={styles.hint}>Nicht mit dieser Vorlage kompatibel</span>}
           </button>
-        ))}
-        <button className={styles.close} onClick={onClose}>
-          Schließen
-        </button>
-      </div>
+        );
+      })}
     </div>
   );
 }

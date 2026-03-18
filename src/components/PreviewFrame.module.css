@@ -1,0 +1,6 @@
+.frame {
+  border: 0;
+  display: block;
+  transform-origin: top left;
+  background: transparent;
+}

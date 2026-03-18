@@ -6,19 +6,20 @@ interface Props {
   onTabChange: (tab: TabId) => void;
 }
 
-const tabs: { id: TabId; label: string }[] = [
+const tabs: Array<{ id: TabId; label: string }> = [
+  { id: 'content', label: 'Inhalt' },
   { id: 'preview', label: 'Vorschau' },
-  { id: 'html', label: 'HTML' },
-  { id: 'css', label: 'CSS' },
   { id: 'templates', label: 'Vorlagen' },
+  { id: 'advanced', label: 'Erweitert' },
 ];
 
 export function TabNavigation({ activeTab, onTabChange }: Props) {
   return (
-    <nav className={styles.tabs}>
+    <nav className={styles.tabs} aria-label="Hauptnavigation">
       {tabs.map((tab) => (
         <button
           key={tab.id}
+          type="button"
           className={`${styles.tab} ${activeTab === tab.id ? styles.tabActive : ''}`}
           onClick={() => onTabChange(tab.id)}
         >
