@@ -8,7 +8,7 @@ export const PRESETS: Preset[] = [
   { id: '1128x191', label: '1128 × 191', width: 1128, height: 191 },
 ];
 
-export const DEFAULT_PRESET_ID = '1080x1350';
+export const DEFAULT_PRESET_ID = PRESETS[2].id; // 1080x1350
 
 export const STORAGE_KEY = 'socialtool-state';
 
