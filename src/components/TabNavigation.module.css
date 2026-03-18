@@ -1,0 +1,32 @@
+.tabs {
+  display: flex;
+  border-bottom: 2px solid #e0e0e0;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.tab {
+  flex: 1;
+  padding: 12px 4px;
+  text-align: center;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tab:hover {
+  color: #0077B5;
+}
+
+.tabActive {
+  color: #0077B5;
+  border-bottom-color: #0077B5;
+}
