@@ -1,5 +1,5 @@
-import type { GraphicTemplate } from "./types";
-import { sharedBaseCss } from "./sharedBaseCss";
+import type { GraphicTemplate } from './types';
+import { sharedBaseCss } from './sharedBaseCss';
 
 export const toWatchTemplate: GraphicTemplate = {
   id: "to-watch",
@@ -148,7 +148,7 @@ export const toWatchTemplate: GraphicTemplate = {
     badgeText: "To watch",
     eyebrow: "To watch:",
     drugName: "Wirkstoff",
-    indicationTitle: "– Indikation",
+    indicationTitle: "- Indikation",
     indicationLine: "Therapiegebiet · Setting · Population",
     zvtLabel: "Zweckmäßige Vergleichstherapie",
     zvtText: "Option A; Option B; ggf. Option C (populationsabhängig)",

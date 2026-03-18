@@ -1,3 +1,6 @@
+import type { GraphicTemplate } from './types';
+import { sharedBaseCss } from './sharedBaseCss';
+
 export const carouselSlideTemplate: GraphicTemplate = {
   id: "carousel-slide",
   name: "Carousel Slide",
@@ -112,7 +115,7 @@ export const carouselSlideTemplate: GraphicTemplate = {
     slideNumber: "01",
     slideTotal: "05",
     thesisLabel: "These 1",
-    titleLine1: "Titel der These —",
+    titleLine1: "Titel der These -",
     highlight: "Keyword",
     titleLine2: "im Fokus",
     subline: "Erläuternder Satz zur These. Was bedeutet das für die Praxis? Was ist der methodische Kern?",
