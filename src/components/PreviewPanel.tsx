@@ -1,43 +1,31 @@
-import { useRef, useEffect, useState } from 'react';
-import type { BackgroundMode, ZoomLevel } from '../types';
-import { getPresetById } from '../utils/presets';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { BackgroundMode, Preset, ZoomLevel } from '../types';
 import { buildPreviewDocument } from '../utils/previewDocument';
+import { BackgroundToggle } from './BackgroundToggle';
+import { ZoomControls } from './ZoomControls';
+import { PreviewFrame } from './PreviewFrame';
 import styles from './PreviewPanel.module.css';
 
 interface Props {
   htmlContent: string;
   cssContent: string;
-  selectedPresetId: string;
+  preset: Preset;
   backgroundMode: BackgroundMode;
   zoomLevel: ZoomLevel;
   onBackgroundChange: (mode: BackgroundMode) => void;
-  onZoomChange: (zoom: ZoomLevel) => void;
+  onZoomChange: (zoomLevel: ZoomLevel) => void;
   onScaleChange: (scale: number) => void;
 }
 
-const bgModes: { mode: BackgroundMode; label: string }[] = [
-  { mode: 'white', label: 'Weiß' },
-  { mode: 'gray', label: 'Grau' },
-  { mode: 'transparent', label: 'Transparent' },
-];
-
-const zoomOptions: { value: ZoomLevel; label: string }[] = [
-  { value: 'fit', label: 'Fit' },
-  { value: '50', label: '50%' },
-  { value: '75', label: '75%' },
-  { value: '100', label: '100%' },
-];
-
-/**
- * Hook that tracks container dimensions via ResizeObserver,
- * so we can compute "fit" scale without refs during render.
- */
 function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
   const [size, setSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    const el = ref.current?.parentElement;
-    if (!el) return;
+    const element = ref.current;
+    if (!element) {
+      return undefined;
+    }
+
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         setSize({
@@ -46,7 +34,8 @@ function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
         });
       }
     });
-    observer.observe(el);
+
+    observer.observe(element);
     return () => observer.disconnect();
   }, [ref]);
 
@@ -56,114 +45,81 @@ function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
 export function PreviewPanel({
   htmlContent,
   cssContent,
-  selectedPresetId,
+  preset,
   backgroundMode,
   zoomLevel,
   onBackgroundChange,
   onZoomChange,
   onScaleChange,
 }: Props) {
-  const preset = getPresetById(selectedPresetId);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const containerSize = useContainerSize(containerRef);
+  const frameAreaRef = useRef<HTMLDivElement>(null);
+  const size = useContainerSize(frameAreaRef);
 
-  // Calculate scale purely from state/props (no ref access during render)
-  let scale: number;
-  if (zoomLevel === '100') {
-    scale = 1;
-  } else if (zoomLevel === '75') {
-    scale = 0.75;
-  } else if (zoomLevel === '50') {
-    scale = 0.5;
-  } else {
-    // Fit mode - based on tracked container size
-    const maxW = containerSize.width - 32;
-    const maxH = Math.max(containerSize.height - 120, 200);
-    const scaleW = maxW / preset.width;
-    const scaleH = maxH / preset.height;
-    scale = containerSize.width > 0 ? Math.min(scaleW, scaleH, 1) : 0.3;
-  }
+  const scale = useMemo(() => {
+    if (zoomLevel === '50') return 0.5;
+    if (zoomLevel === '75') return 0.75;
+    if (zoomLevel === '100') return 1;
 
-  // Notify parent of scale changes
-  const prevScaleRef = useRef(scale);
+    const availableWidth = Math.max(size.width - 32, 200);
+    const availableHeight = Math.max(size.height - 32, 200);
+    const scaleFromWidth = availableWidth / preset.width;
+    const scaleFromHeight = availableHeight / preset.height;
+
+    return size.width > 0 ? Math.min(scaleFromWidth, scaleFromHeight, 1) : 0.3;
+  }, [preset.height, preset.width, size.height, size.width, zoomLevel]);
+
   useEffect(() => {
-    if (prevScaleRef.current !== scale) {
-      prevScaleRef.current = scale;
-      onScaleChange(scale);
-    }
-  });
+    onScaleChange(scale);
+  }, [onScaleChange, scale]);
 
-  // Update preview iframe content
-  useEffect(() => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-    const doc = buildPreviewDocument(htmlContent, cssContent, preset.width, preset.height);
-    const iframeDoc = iframe.contentDocument;
-    if (iframeDoc) {
-      iframeDoc.open();
-      iframeDoc.write(doc);
-      iframeDoc.close();
-    }
-  }, [htmlContent, cssContent, preset.width, preset.height]);
+  const documentHtml = useMemo(
+    () => buildPreviewDocument(htmlContent, cssContent, preset.width, preset.height),
+    [cssContent, htmlContent, preset.height, preset.width]
+  );
 
-  const bgClass =
+  const backgroundClass =
     backgroundMode === 'gray'
-      ? styles.bgGray
+      ? styles.gray
       : backgroundMode === 'transparent'
-        ? styles.bgTransparent
-        : styles.bgWhite;
+        ? styles.transparent
+        : styles.white;
 
   return (
-    <div className={styles.panel} ref={containerRef}>
-      <div className={styles.info}>
-        <span className={styles.badge}>
-          {preset.label}
-        </span>
-        <span>Skalierung: {Math.round(scale * 100)}%</span>
+    <section className={styles.panel}>
+      <div className={styles.header}>
+        <div>
+          <h2 className={styles.title}>Live-Vorschau</h2>
+          <p className={styles.meta}>
+            Aktives Format: {preset.label} · {preset.width} × {preset.height} px
+          </p>
+        </div>
+        <span className={styles.scaleBadge}>{Math.round(scale * 100)}%</span>
       </div>
 
-      <div className={styles.controls}>
-        {bgModes.map((bg) => (
-          <button
-            key={bg.mode}
-            className={`${styles.controlBtn} ${backgroundMode === bg.mode ? styles.controlBtnActive : ''}`}
-            onClick={() => onBackgroundChange(bg.mode)}
-          >
-            {bg.label}
-          </button>
-        ))}
-        <span style={{ width: 1, height: 20, background: '#ddd' }} />
-        {zoomOptions.map((z) => (
-          <button
-            key={z.value}
-            className={`${styles.controlBtn} ${zoomLevel === z.value ? styles.controlBtnActive : ''}`}
-            onClick={() => onZoomChange(z.value)}
-          >
-            {z.label}
-          </button>
-        ))}
+      <div className={styles.controlRow}>
+        <div className={styles.controlBlock}>
+          <span className={styles.controlLabel}>Hintergrund</span>
+          <BackgroundToggle value={backgroundMode} onChange={onBackgroundChange} />
+        </div>
+        <div className={styles.controlBlock}>
+          <span className={styles.controlLabel}>Zoom</span>
+          <ZoomControls value={zoomLevel} onChange={onZoomChange} />
+        </div>
       </div>
 
-      <div
-        className={`${styles.previewContainer} ${bgClass}`}
-        style={{
-          width: preset.width * scale,
-          height: preset.height * scale,
-        }}
-      >
-        <iframe
-          ref={iframeRef}
-          className={styles.iframe}
-          title="Preview"
-          sandbox="allow-same-origin"
-          style={{
-            width: preset.width,
-            height: preset.height,
-            transform: `scale(${scale})`,
-          }}
-        />
+      <div ref={frameAreaRef} className={`${styles.previewArea} ${backgroundClass}`}>
+        <div
+          className={styles.frameBounds}
+          style={{ width: preset.width * scale, height: preset.height * scale }}
+        >
+          <PreviewFrame
+            documentHtml={documentHtml}
+            width={preset.width}
+            height={preset.height}
+            scale={scale}
+          />
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

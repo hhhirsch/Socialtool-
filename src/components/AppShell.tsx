@@ -1,92 +1,181 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useAppState } from '../hooks/useAppState';
-import { getPresetById } from '../utils/presets';
-import { exportPng } from '../utils/exportPng';
 import { exportPdf } from '../utils/exportPdf';
-import { TabNavigation } from './TabNavigation';
+import { exportPng } from '../utils/exportPng';
+import { generateFilename } from '../utils/generateFilename';
+import { getPresetById } from '../utils/presets';
+import { renderTemplate } from '../utils/renderTemplate';
+import { getTemplateById, getTemplates } from '../utils/templateRegistry';
 import { BottomActionBar } from './BottomActionBar';
+import { DynamicFieldForm } from './DynamicFieldForm';
+import { ErrorBanner } from './ErrorBanner';
 import { PresetSelector } from './PresetSelector';
 import { PreviewPanel } from './PreviewPanel';
-import { HtmlEditor } from './HtmlEditor';
-import { CssEditor } from './CssEditor';
-import { TemplateManager } from './TemplateManager';
-import { ErrorBanner } from './ErrorBanner';
+import { TabNavigation } from './TabNavigation';
+import { TemplateLibrary } from './TemplateLibrary';
+import { TemplateSelector } from './TemplateSelector';
 import { ToastMessage } from './ToastMessage';
 import styles from './AppShell.module.css';
 
-function generateFilename(preset: { width: number; height: number }): string {
-  const now = new Date();
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  const date = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
-  const time = `${pad(now.getHours())}${pad(now.getMinutes())}`;
-  return `linkedin-${preset.width}x${preset.height}-${date}-${time}`;
-}
-
 export function AppShell() {
+  const templates = useMemo(() => getTemplates(), []);
   const {
     state,
     toast,
     error,
     showError,
     dismissError,
-    setHtmlContent,
-    setCssContent,
-    setSelectedPresetId,
     setActiveTab,
+    selectTemplate,
+    selectPreset,
+    updateFieldValue,
+    resetFieldValues,
+    loadExampleContent,
     setBackgroundMode,
     setZoomLevel,
     setPreviewScale,
-    saveTemplate,
-    loadTemplate,
-    deleteTemplate,
-    renameTemplate,
-    duplicateTemplate,
   } = useAppState();
 
-  const [showPresetSelector, setShowPresetSelector] = useState(false);
+  const selectedTemplate = useMemo(
+    () => getTemplateById(state.selectedTemplateId),
+    [state.selectedTemplateId]
+  );
+  const selectedPreset = useMemo(
+    () => getPresetById(state.selectedPresetId),
+    [state.selectedPresetId]
+  );
 
-  const preset = getPresetById(state.selectedPresetId);
+  const renderedHtml = useMemo(
+    () => renderTemplate(selectedTemplate.htmlTemplate, state.fieldValues, selectedTemplate.fields),
+    [selectedTemplate.fields, selectedTemplate.htmlTemplate, state.fieldValues]
+  );
 
   const handleExportPng = useCallback(async () => {
     try {
-      const filename = generateFilename(preset);
-      await exportPng(state.htmlContent, state.cssContent, preset.width, preset.height, filename);
-    } catch (err) {
+      await exportPng(
+        renderedHtml,
+        selectedTemplate.css,
+        selectedPreset.width,
+        selectedPreset.height,
+        generateFilename(selectedPreset, selectedTemplate)
+      );
+    } catch (exportError) {
       showError(
-        `PNG-Export fehlgeschlagen: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`
+        `PNG-Export fehlgeschlagen: ${
+          exportError instanceof Error ? exportError.message : 'Unbekannter Fehler'
+        }`
       );
     }
-  }, [state.htmlContent, state.cssContent, preset, showError]);
+  }, [renderedHtml, selectedPreset, selectedTemplate, showError]);
 
   const handleExportPdf = useCallback(() => {
     try {
-      exportPdf(state.htmlContent, state.cssContent, preset.width, preset.height);
-    } catch (err) {
+      exportPdf(renderedHtml, selectedTemplate.css, selectedPreset.width, selectedPreset.height);
+    } catch (exportError) {
       showError(
-        `PDF-Export fehlgeschlagen: ${err instanceof Error ? err.message : 'Unbekannter Fehler'}`
+        `PDF-Export fehlgeschlagen: ${
+          exportError instanceof Error ? exportError.message : 'Unbekannter Fehler'
+        }`
       );
     }
-  }, [state.htmlContent, state.cssContent, preset, showError]);
+  }, [renderedHtml, selectedPreset.height, selectedPreset.width, selectedTemplate.css, showError]);
 
-  const handleUpload = useCallback(
-    (content: string) => {
-      setHtmlContent(content);
-      setActiveTab('preview');
+  const handleTabAction = useCallback(() => {
+    setActiveTab(state.activeTab === 'preview' ? 'content' : 'preview');
+  }, [setActiveTab, state.activeTab]);
+
+  const handleLibrarySelect = useCallback(
+    (templateId: string) => {
+      selectTemplate(templateId);
+      setActiveTab('content');
     },
-    [setHtmlContent, setActiveTab]
+    [selectTemplate, setActiveTab]
   );
 
   return (
     <div className={styles.app}>
       <ErrorBanner message={error} onDismiss={dismissError} />
+
+      <header className={styles.header}>
+        <div>
+          <p className={styles.kicker}>Mobile-first LinkedIn Grafikgenerator</p>
+          <h1 className={styles.title}>LinkedIn Graphic Builder</h1>
+        </div>
+        <div className={styles.headerMeta}>
+          <span>{selectedTemplate.name}</span>
+          <span>
+            {selectedPreset.width} × {selectedPreset.height}px
+          </span>
+        </div>
+      </header>
+
       <TabNavigation activeTab={state.activeTab} onTabChange={setActiveTab} />
 
-      <div className={styles.content}>
+      <main className={styles.content}>
+        {state.activeTab === 'content' && (
+          <div className={styles.stack}>
+            <section className={styles.card}>
+              <div className={styles.sectionHeader}>
+                <div>
+                  <h2 className={styles.sectionTitle}>Vorlage wählen</h2>
+                  <p className={styles.sectionText}>
+                    Inhalte bleiben formularbasiert. HTML und CSS werden intern aus der Vorlage erzeugt.
+                  </p>
+                </div>
+              </div>
+              <TemplateSelector
+                templates={templates}
+                selectedTemplateId={selectedTemplate.id}
+                onSelect={selectTemplate}
+              />
+            </section>
+
+            <section className={styles.card}>
+              <div className={styles.sectionHeader}>
+                <div>
+                  <h2 className={styles.sectionTitle}>Format</h2>
+                  <p className={styles.sectionText}>
+                    Standard ist 1080 × 1350. Export und Vorschau verwenden immer die aktive Originalgröße.
+                  </p>
+                </div>
+              </div>
+              <PresetSelector
+                selectedPresetId={selectedPreset.id}
+                supportedPresetIds={selectedTemplate.supportedPresetIds}
+                onSelect={selectPreset}
+              />
+            </section>
+
+            <section className={styles.card}>
+              <div className={styles.sectionHeader}>
+                <div>
+                  <h2 className={styles.sectionTitle}>Inhalt</h2>
+                  <p className={styles.sectionText}>{selectedTemplate.description}</p>
+                </div>
+                <div className={styles.inlineActions}>
+                  <button type="button" className={styles.secondaryButton} onClick={loadExampleContent}>
+                    Beispiel laden
+                  </button>
+                  <button type="button" className={styles.secondaryButton} onClick={resetFieldValues}>
+                    Reset
+                  </button>
+                </div>
+              </div>
+
+              <DynamicFieldForm
+                fields={selectedTemplate.fields}
+                values={state.fieldValues}
+                onChange={updateFieldValue}
+              />
+            </section>
+          </div>
+        )}
+
         {state.activeTab === 'preview' && (
           <PreviewPanel
-            htmlContent={state.htmlContent}
-            cssContent={state.cssContent}
-            selectedPresetId={state.selectedPresetId}
+            htmlContent={renderedHtml}
+            cssContent={selectedTemplate.css}
+            preset={selectedPreset}
             backgroundMode={state.backgroundMode}
             zoomLevel={state.zoomLevel}
             onBackgroundChange={setBackgroundMode}
@@ -95,49 +184,66 @@ export function AppShell() {
           />
         )}
 
-        {state.activeTab === 'html' && (
-          <HtmlEditor
-            htmlContent={state.htmlContent}
-            onChange={setHtmlContent}
-            onError={showError}
-          />
-        )}
-
-        {state.activeTab === 'css' && (
-          <CssEditor
-            cssContent={state.cssContent}
-            onChange={setCssContent}
-            onSaveTemplate={saveTemplate}
-          />
-        )}
-
         {state.activeTab === 'templates' && (
-          <TemplateManager
-            templates={state.templates}
-            activeTemplateId={state.activeTemplateId}
-            onLoad={loadTemplate}
-            onDelete={deleteTemplate}
-            onRename={renameTemplate}
-            onDuplicate={duplicateTemplate}
-          />
+          <div className={styles.stack}>
+            <section className={styles.card}>
+              <div className={styles.sectionHeader}>
+                <div>
+                  <h2 className={styles.sectionTitle}>Vorlagenbibliothek</h2>
+                  <p className={styles.sectionText}>
+                    Neue Templates können zentral über das datengetriebene Registry-System ergänzt werden.
+                  </p>
+                </div>
+              </div>
+              <TemplateLibrary
+                templates={templates}
+                selectedTemplateId={selectedTemplate.id}
+                onSelect={handleLibrarySelect}
+              />
+            </section>
+          </div>
         )}
-      </div>
+
+        {state.activeTab === 'advanced' && (
+          <div className={styles.stack}>
+            <section className={styles.card}>
+              <div className={styles.sectionHeader}>
+                <div>
+                  <h2 className={styles.sectionTitle}>Readonly Expertenmodus</h2>
+                  <p className={styles.sectionText}>
+                    Debug-Ansicht des generierten Markups und der aktiven CSS-Vorlage. Die Standardnutzung bleibt formularbasiert.
+                  </p>
+                </div>
+              </div>
+
+              <div className={styles.debugMeta}>
+                <span>Vorlage: {selectedTemplate.name}</span>
+                <span>Preset: {selectedPreset.label}</span>
+                <span>Skalierung: {Math.round(state.previewScale * 100)}%</span>
+              </div>
+
+              <div className={styles.codeGrid}>
+                <label className={styles.codeBlock}>
+                  <span>Generiertes HTML</span>
+                  <textarea readOnly value={renderedHtml} className={styles.codeArea} />
+                </label>
+                <label className={styles.codeBlock}>
+                  <span>Template CSS</span>
+                  <textarea readOnly value={selectedTemplate.css} className={styles.codeArea} />
+                </label>
+              </div>
+            </section>
+          </div>
+        )}
+      </main>
 
       <BottomActionBar
-        onUpload={handleUpload}
+        activeTab={state.activeTab}
+        onTabAction={handleTabAction}
         onExportPng={handleExportPng}
         onExportPdf={handleExportPdf}
-        onPreset={() => setShowPresetSelector(true)}
-        onError={showError}
+        onReset={resetFieldValues}
       />
-
-      {showPresetSelector && (
-        <PresetSelector
-          selectedPresetId={state.selectedPresetId}
-          onSelect={setSelectedPresetId}
-          onClose={() => setShowPresetSelector(false)}
-        />
-      )}
 
       <ToastMessage message={toast} />
     </div>

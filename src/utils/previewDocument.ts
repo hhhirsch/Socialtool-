@@ -1,7 +1,7 @@
 import { sanitizeHtml } from './sanitizeHtml';
 
 /**
- * Builds a complete HTML document for the preview iframe.
+ * Generates an isolated iframe document so template CSS can never leak into the app shell.
  */
 export function buildPreviewDocument(
   html: string,
@@ -13,19 +13,41 @@ export function buildPreviewDocument(
 
   return `<!DOCTYPE html>
 <html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body {
-    width: ${width}px;
-    height: ${height}px;
-    overflow: hidden;
-  }
-  ${css}
-</style>
-</head>
-<body>${safeHtml}</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      *, *::before, *::after {
+        box-sizing: border-box;
+      }
+      html, body {
+        margin: 0;
+        width: ${width}px;
+        height: ${height}px;
+        overflow: hidden;
+        background: transparent;
+      }
+      body {
+        display: block;
+      }
+      #graphic-root {
+        width: ${width}px;
+        height: ${height}px;
+        overflow: hidden;
+        isolation: isolate;
+      }
+      img {
+        max-width: 100%;
+        display: block;
+      }
+      ${css}
+    </style>
+  </head>
+  <body>
+    <div id="graphic-root">${safeHtml}</div>
+  </body>
 </html>`;
 }

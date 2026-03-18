@@ -1,0 +1,32 @@
+.selector {
+  display: grid;
+  gap: 12px;
+}
+
+.card {
+  width: 100%;
+  border: 1px solid #dbe3ef;
+  border-radius: 18px;
+  background: white;
+  padding: 16px;
+  text-align: left;
+  display: grid;
+  gap: 6px;
+  font: inherit;
+}
+
+.cardActive {
+  border-color: #2563eb;
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.12);
+}
+
+.name {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.description {
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: #475569;
+}

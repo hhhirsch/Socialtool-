@@ -1,10 +1,30 @@
 import html2canvas from 'html2canvas';
 import { buildPreviewDocument } from './previewDocument';
 
+async function waitForAssets(document: Document): Promise<void> {
+  const fontReady = 'fonts' in document ? (document.fonts.ready.catch(() => undefined) as Promise<unknown>) : Promise.resolve();
+  const images = Array.from(document.images);
+
+  await Promise.all([
+    fontReady,
+    ...images.map(
+      (image) =>
+        image.complete
+          ? Promise.resolve()
+          : new Promise<void>((resolve) => {
+              image.addEventListener('load', () => resolve(), { once: true });
+              image.addEventListener('error', () => resolve(), { once: true });
+            })
+    ),
+  ]);
+
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+}
+
 /**
- * Renders HTML+CSS at exact target dimensions into a PNG blob.
- * Creates a hidden iframe at full resolution, renders with html2canvas,
- * then cleans up.
+ * Exports the isolated graphic in its original preset resolution.
  */
 export async function exportPng(
   html: string,
@@ -13,73 +33,69 @@ export async function exportPng(
   height: number,
   filename: string
 ): Promise<void> {
-  // Create a hidden container at exact target dimensions
-  const container = document.createElement('div');
-  container.style.position = 'fixed';
-  container.style.left = '-99999px';
-  container.style.top = '0';
-  container.style.width = `${width}px`;
-  container.style.height = `${height}px`;
-  container.style.overflow = 'hidden';
-  document.body.appendChild(container);
+  const mountNode = document.createElement('div');
+  mountNode.style.position = 'fixed';
+  mountNode.style.inset = '0 auto auto -99999px';
+  mountNode.style.width = `${width}px`;
+  mountNode.style.height = `${height}px`;
+  document.body.appendChild(mountNode);
 
   const iframe = document.createElement('iframe');
+  iframe.setAttribute('sandbox', 'allow-same-origin');
   iframe.style.width = `${width}px`;
   iframe.style.height = `${height}px`;
-  iframe.style.border = 'none';
-  iframe.style.overflow = 'hidden';
-  container.appendChild(iframe);
+  iframe.style.border = '0';
+  mountNode.appendChild(iframe);
 
-  const doc = buildPreviewDocument(html, css, width, height);
+  try {
+    await new Promise<void>((resolve, reject) => {
+      iframe.onload = () => resolve();
+      iframe.onerror = () => reject(new Error('Vorschau für PNG-Export konnte nicht geladen werden.'));
+      iframe.srcdoc = buildPreviewDocument(html, css, width, height);
+    });
 
-  return new Promise<void>((resolve, reject) => {
-    iframe.onload = async () => {
-      try {
-        // Wait for content to render
-        await new Promise((r) => setTimeout(r, 500));
+    const exportDocument = iframe.contentDocument;
+    if (!exportDocument) {
+      throw new Error('Exportdokument konnte nicht gelesen werden.');
+    }
 
-        const body = iframe.contentDocument?.body;
-        if (!body) {
-          throw new Error('Could not access iframe content for export');
+    await waitForAssets(exportDocument);
+
+    const graphicRoot = exportDocument.getElementById('graphic-root');
+    if (!(graphicRoot instanceof HTMLElement)) {
+      throw new Error('Grafikinhalt für den Export wurde nicht gefunden.');
+    }
+
+    const canvas = await html2canvas(graphicRoot, {
+      width,
+      height,
+      scale: 1,
+      backgroundColor: null,
+      allowTaint: false,
+      useCORS: true,
+      logging: false,
+      windowWidth: width,
+      windowHeight: height,
+    });
+
+    const blob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((result) => {
+        if (result) {
+          resolve(result);
+          return;
         }
 
-        const canvas = await html2canvas(body, {
-          width,
-          height,
-          scale: 1,
-          useCORS: true,
-          allowTaint: true,
-          logging: false,
-        });
+        reject(new Error('PNG-Datei konnte nicht erstellt werden.'));
+      }, 'image/png');
+    });
 
-        canvas.toBlob((blob) => {
-          if (!blob) {
-            reject(new Error('PNG export failed: could not create image'));
-            return;
-          }
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `${filename}.png`;
-          a.click();
-          URL.revokeObjectURL(url);
-          resolve();
-        }, 'image/png');
-      } catch (err) {
-        reject(err);
-      } finally {
-        document.body.removeChild(container);
-      }
-    };
-
-    const iframeDoc = iframe.contentDocument;
-    if (iframeDoc) {
-      iframeDoc.open();
-      iframeDoc.write(doc);
-      iframeDoc.close();
-    } else {
-      document.body.removeChild(container);
-      reject(new Error('Could not write to iframe for PNG export'));
-    }
-  });
+    const downloadUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = `${filename}.png`;
+    link.click();
+    URL.revokeObjectURL(downloadUrl);
+  } finally {
+    mountNode.remove();
+  }
 }

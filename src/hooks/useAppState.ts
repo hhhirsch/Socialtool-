@@ -1,202 +1,166 @@
-import { useState, useCallback, useEffect } from 'react';
-import type { AppState, TabId, BackgroundMode, ZoomLevel, CssTemplate } from '../types';
-import { loadState, saveState } from '../utils/storage';
-import { DEFAULT_PRESET_ID, DEBOUNCE_MS } from '../constants';
+import { useEffect, useState, useCallback } from 'react';
+import { DEBOUNCE_MS } from '../constants';
+import type { AppState, BackgroundMode, TabId, ZoomLevel } from '../types';
 import { useDebouncedEffect } from './useDebounce';
+import { loadState, saveState } from '../utils/storage';
+import {
+  ensureCompatiblePresetId,
+  getTemplateById,
+  isValidTemplateId,
+  mergeTemplateFieldValues,
+  getTemplateDefaults,
+} from '../utils/templateRegistry';
 
-function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+function createInitialState(): { state: AppState; message: string | null } {
+  const { state: persistedState, error } = loadState();
+  const resolvedTemplate = getTemplateById(persistedState.selectedTemplateId);
+  const selectedTemplateId = isValidTemplateId(persistedState.selectedTemplateId)
+    ? persistedState.selectedTemplateId
+    : resolvedTemplate.id;
+  const selectedPresetId = ensureCompatiblePresetId(resolvedTemplate, persistedState.selectedPresetId);
+  const mismatchMessage =
+    selectedPresetId !== persistedState.selectedPresetId
+      ? 'Gespeichertes Format war mit der Vorlage nicht kompatibel und wurde angepasst.'
+      : null;
+
+  return {
+    state: {
+      selectedTemplateId,
+      selectedPresetId,
+      fieldValues: mergeTemplateFieldValues(resolvedTemplate, persistedState.fieldValues),
+      activeTab: persistedState.activeTab,
+      previewScale: persistedState.previewScale,
+      backgroundMode: persistedState.backgroundMode,
+      zoomLevel: persistedState.zoomLevel,
+    },
+    message: error ?? mismatchMessage,
+  };
 }
 
 export function useAppState() {
-  const [state, setState] = useState<AppState>(() => {
-    const persisted = loadState();
-    return {
-      ...persisted,
-      previewScale: 1,
-    };
-  });
+  const [initialState] = useState(createInitialState);
+  const [state, setState] = useState<AppState>(initialState.state);
   const [toast, setToast] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialState.message);
 
-  // Autosave with debounce
   useDebouncedEffect(
     () => {
-      saveState({
-        htmlContent: state.htmlContent,
-        cssContent: state.cssContent,
+      const storageError = saveState({
+        selectedTemplateId: state.selectedTemplateId,
         selectedPresetId: state.selectedPresetId,
-        activeTemplateId: state.activeTemplateId,
+        fieldValues: state.fieldValues,
         activeTab: state.activeTab,
+        previewScale: state.previewScale,
         backgroundMode: state.backgroundMode,
         zoomLevel: state.zoomLevel,
-        templates: state.templates,
       });
+
+      if (storageError) {
+        setError(storageError);
+      }
     },
     [
-      state.htmlContent,
-      state.cssContent,
+      state.selectedTemplateId,
       state.selectedPresetId,
-      state.activeTemplateId,
+      state.fieldValues,
       state.activeTab,
+      state.previewScale,
       state.backgroundMode,
       state.zoomLevel,
-      state.templates,
     ],
     DEBOUNCE_MS
   );
 
-  // Auto-dismiss toast
   useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 3000);
-      return () => clearTimeout(timer);
+    if (!toast) {
+      return undefined;
     }
+
+    const timeout = window.setTimeout(() => setToast(null), 2600);
+    return () => window.clearTimeout(timeout);
   }, [toast]);
 
-  // Auto-dismiss error
   useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => setError(null), 5000);
-      return () => clearTimeout(timer);
+    if (!error) {
+      return undefined;
     }
+
+    const timeout = window.setTimeout(() => setError(null), 5000);
+    return () => window.clearTimeout(timeout);
   }, [error]);
 
-  const showToast = useCallback((msg: string) => setToast(msg), []);
-  const showError = useCallback((msg: string) => setError(msg), []);
+  const showToast = useCallback((message: string) => setToast(message), []);
+  const showError = useCallback((message: string) => setError(message), []);
   const dismissError = useCallback(() => setError(null), []);
 
-  const setHtmlContent = useCallback(
-    (html: string) => setState((s) => ({ ...s, htmlContent: html })),
-    []
-  );
+  const setActiveTab = useCallback((tab: TabId) => {
+    setState((currentState) => ({ ...currentState, activeTab: tab }));
+  }, []);
 
-  const setCssContent = useCallback(
-    (css: string) => setState((s) => ({ ...s, cssContent: css })),
-    []
-  );
+  const selectTemplate = useCallback((templateId: string) => {
+    const template = getTemplateById(templateId);
 
-  const setSelectedPresetId = useCallback(
-    (id: string) => setState((s) => ({ ...s, selectedPresetId: id || DEFAULT_PRESET_ID })),
-    []
-  );
+    setState((currentState) => ({
+      ...currentState,
+      selectedTemplateId: template.id,
+      selectedPresetId: ensureCompatiblePresetId(template, currentState.selectedPresetId),
+      fieldValues: getTemplateDefaults(template),
+    }));
+  }, []);
 
-  const setActiveTab = useCallback(
-    (tab: TabId) => setState((s) => ({ ...s, activeTab: tab })),
-    []
-  );
-
-  const setBackgroundMode = useCallback(
-    (mode: BackgroundMode) => setState((s) => ({ ...s, backgroundMode: mode })),
-    []
-  );
-
-  const setZoomLevel = useCallback(
-    (zoom: ZoomLevel) => setState((s) => ({ ...s, zoomLevel: zoom })),
-    []
-  );
-
-  const setPreviewScale = useCallback(
-    (scale: number) => setState((s) => ({ ...s, previewScale: scale })),
-    []
-  );
-
-  // Template actions
-  const saveTemplate = useCallback(
-    (name: string, css: string) => {
-      const trimmed = name.trim();
-      if (!trimmed) {
-        showError('Vorlagenname darf nicht leer sein.');
+  const selectPreset = useCallback(
+    (presetId: string) => {
+      const template = getTemplateById(state.selectedTemplateId);
+      if (!template.supportedPresetIds.includes(presetId)) {
+        showError('Dieses Format ist für die gewählte Vorlage nicht verfügbar.');
         return;
       }
 
-      setState((s) => {
-        const existing = s.templates.find((t) => t.name === trimmed);
-        if (existing) {
-          // Overwrite existing
-          const updated = s.templates.map((t) =>
-            t.id === existing.id ? { ...t, css, updatedAt: Date.now() } : t
-          );
-          return { ...s, templates: updated, activeTemplateId: existing.id };
-        }
-        const newTemplate: CssTemplate = {
-          id: generateId(),
-          name: trimmed,
-          css,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        };
-        return {
-          ...s,
-          templates: [...s.templates, newTemplate],
-          activeTemplateId: newTemplate.id,
-        };
-      });
-      showToast(`Vorlage "${trimmed}" gespeichert.`);
+      setState((currentState) => ({ ...currentState, selectedPresetId: presetId }));
     },
-    [showToast, showError]
+    [state.selectedTemplateId, showError]
   );
 
-  const loadTemplate = useCallback(
-    (id: string) => {
-      setState((s) => {
-        const template = s.templates.find((t) => t.id === id);
-        if (!template) return s;
-        return { ...s, cssContent: template.css, activeTemplateId: id };
-      });
-      showToast('Vorlage geladen.');
-    },
-    [showToast]
-  );
+  const updateFieldValue = useCallback((fieldId: string, value: string) => {
+    setState((currentState) => ({
+      ...currentState,
+      fieldValues: {
+        ...currentState.fieldValues,
+        [fieldId]: value,
+      },
+    }));
+  }, []);
 
-  const deleteTemplate = useCallback(
-    (id: string) => {
-      setState((s) => ({
-        ...s,
-        templates: s.templates.filter((t) => t.id !== id),
-        activeTemplateId: s.activeTemplateId === id ? null : s.activeTemplateId,
-      }));
-      showToast('Vorlage gelöscht.');
-    },
-    [showToast]
-  );
+  const resetFieldValues = useCallback(() => {
+    const template = getTemplateById(state.selectedTemplateId);
+    setState((currentState) => ({
+      ...currentState,
+      fieldValues: getTemplateDefaults(template),
+    }));
+    showToast('Standardwerte der Vorlage wurden wiederhergestellt.');
+  }, [state.selectedTemplateId, showToast]);
 
-  const renameTemplate = useCallback(
-    (id: string, newName: string) => {
-      const trimmed = newName.trim();
-      if (!trimmed) {
-        showError('Vorlagenname darf nicht leer sein.');
-        return;
-      }
-      setState((s) => ({
-        ...s,
-        templates: s.templates.map((t) =>
-          t.id === id ? { ...t, name: trimmed, updatedAt: Date.now() } : t
-        ),
-      }));
-      showToast('Vorlage umbenannt.');
-    },
-    [showToast, showError]
-  );
+  const loadExampleContent = useCallback(() => {
+    const template = getTemplateById(state.selectedTemplateId);
+    setState((currentState) => ({
+      ...currentState,
+      fieldValues: getTemplateDefaults(template),
+      activeTab: 'content',
+    }));
+    showToast('Beispielinhalte geladen.');
+  }, [state.selectedTemplateId, showToast]);
 
-  const duplicateTemplate = useCallback(
-    (id: string) => {
-      setState((s) => {
-        const template = s.templates.find((t) => t.id === id);
-        if (!template) return s;
-        const newTemplate: CssTemplate = {
-          id: generateId(),
-          name: `${template.name} (Kopie)`,
-          css: template.css,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        };
-        return { ...s, templates: [...s.templates, newTemplate] };
-      });
-      showToast('Vorlage dupliziert.');
-    },
-    [showToast]
-  );
+  const setBackgroundMode = useCallback((mode: BackgroundMode) => {
+    setState((currentState) => ({ ...currentState, backgroundMode: mode }));
+  }, []);
+
+  const setZoomLevel = useCallback((zoomLevel: ZoomLevel) => {
+    setState((currentState) => ({ ...currentState, zoomLevel }));
+  }, []);
+
+  const setPreviewScale = useCallback((previewScale: number) => {
+    setState((currentState) => ({ ...currentState, previewScale }));
+  }, []);
 
   return {
     state,
@@ -205,17 +169,14 @@ export function useAppState() {
     showToast,
     showError,
     dismissError,
-    setHtmlContent,
-    setCssContent,
-    setSelectedPresetId,
     setActiveTab,
+    selectTemplate,
+    selectPreset,
+    updateFieldValue,
+    resetFieldValues,
+    loadExampleContent,
     setBackgroundMode,
     setZoomLevel,
     setPreviewScale,
-    saveTemplate,
-    loadTemplate,
-    deleteTemplate,
-    renameTemplate,
-    duplicateTemplate,
   };
 }
