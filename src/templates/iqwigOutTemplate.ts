@@ -1,0 +1,160 @@
+export const iqwigOutTemplate: GraphicTemplate = {
+  id: "iqwig-out",
+  name: "IQWiG Bewertung",
+  description: "Timeline-orientierte Slide für veröffentlichte IQWiG-Bewertungen.",
+  supportedPresetIds: ["1080x1080", "1080x1350", "1200x627"],
+  htmlTemplate: `
+    <div class="slide">
+      <div class="grid"></div>
+      <div class="glow glow--blue-tr"></div>
+      <div class="accent-stripe accent-stripe--blue"></div>
+      <div class="topbar topbar--blue"></div>
+
+      <div class="tag">
+        <div class="tag-dot tag-dot--blue"></div>
+        <span class="tag-text tag-text--blue">{{tagText}}</span>
+      </div>
+
+      <div class="badge badge--blue">{{badgeText}}</div>
+
+      <div class="s3-drug">{{drugName}}<br>{{indicationTitle}}</div>
+      <div class="s3-rule"><div class="rule rule--blue"></div></div>
+      <div class="s3-indication">{{indicationLine}}</div>
+
+      <div class="s3-timeline">
+        <div class="s3-tl-item">
+          <div class="s3-tl-dot s3-tl-dot--filled"></div>
+          <div>
+            <div class="s3-tl-label">{{timeline1Label}}</div>
+            <div class="s3-tl-value">{{timeline1Value}}</div>
+          </div>
+        </div>
+
+        <div class="s3-tl-item">
+          <div class="s3-tl-dot s3-tl-dot--open"></div>
+          <div>
+            <div class="s3-tl-label">{{timeline2Label}}</div>
+            <div class="s3-tl-value">{{timeline2Value}}</div>
+          </div>
+        </div>
+
+        <div class="s3-tl-item">
+          <div class="s3-tl-dot s3-tl-dot--open"></div>
+          <div>
+            <div class="s3-tl-label">{{timeline3Label}}</div>
+            <div class="s3-tl-value s3-tl-value--muted">{{timeline3Value}}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom bottom--blue">
+        <div class="publisher">{{publisher}}</div>
+        <div class="brand">{{brand}}</div>
+      </div>
+    </div>
+  `,
+  css: `
+    ${sharedBaseCss}
+
+    .topbar--blue {
+      background: linear-gradient(90deg, #60a5fa 0%, rgba(96,165,250,0.2) 60%, transparent 100%);
+    }
+
+    .accent-stripe--blue {
+      background: linear-gradient(to bottom, transparent, #60a5fa, transparent);
+    }
+
+    .tag-dot--blue {
+      background: #60a5fa;
+      box-shadow: 0 0 10px rgba(96,165,250,0.6);
+    }
+
+    .tag-text--blue {
+      color: rgba(96,165,250,0.75);
+    }
+
+    .rule--blue { background: #60a5fa; }
+
+    .bottom--blue { border-top-color: rgba(96,165,250,0.12); }
+
+    .s3-drug {
+      position: absolute;
+      top: 128px; left: 72px; right: 72px; z-index: 5;
+      font-family: 'Instrument Serif', serif;
+      font-size: 96px; line-height: 0.95;
+      color: #fff; letter-spacing: -2px;
+    }
+
+    .s3-rule { position: absolute; top: 390px; left: 72px; z-index: 5; }
+
+    .s3-indication {
+      position: absolute;
+      top: 412px; left: 72px; right: 72px; z-index: 5;
+      font-size: 26px; font-weight: 300; color: var(--text-mid); line-height: 1.4;
+    }
+
+    .s3-timeline {
+      position: absolute;
+      top: 530px; left: 72px; right: 72px; z-index: 5;
+      display: flex; flex-direction: column; gap: 0;
+    }
+
+    .s3-tl-item {
+      display: flex; align-items: flex-start; gap: 22px;
+      padding: 22px 0; border-bottom: 1px solid var(--border-sub);
+    }
+
+    .s3-tl-item:last-child { border-bottom: none; }
+
+    .s3-tl-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      flex-shrink: 0; margin-top: 5px;
+    }
+
+    .s3-tl-dot--filled { background: #60a5fa; box-shadow: 0 0 8px rgba(96,165,250,0.5); }
+    .s3-tl-dot--open   { background: transparent; border: 2px solid rgba(96,165,250,0.3); }
+
+    .s3-tl-label {
+      font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+      color: rgba(96,165,250,0.5); margin-bottom: 5px;
+    }
+
+    .s3-tl-value {
+      font-size: 22px; font-weight: 500; color: var(--text); line-height: 1.35;
+    }
+
+    .s3-tl-value--muted {
+      font-size: 20px; color: rgba(203,213,225,0.7);
+    }
+  `,
+  fields: [
+    { id: "tagText", label: "Tag", type: "text" },
+    { id: "badgeText", label: "Badge", type: "text" },
+    { id: "drugName", label: "Wirkstoff", type: "text" },
+    { id: "indicationTitle", label: "Indikation Titel", type: "text" },
+    { id: "indicationLine", label: "Indikationszeile", type: "textarea", multiline: true },
+    { id: "timeline1Label", label: "Timeline 1 Label", type: "text" },
+    { id: "timeline1Value", label: "Timeline 1 Wert", type: "text" },
+    { id: "timeline2Label", label: "Timeline 2 Label", type: "text" },
+    { id: "timeline2Value", label: "Timeline 2 Wert", type: "text" },
+    { id: "timeline3Label", label: "Timeline 3 Label", type: "text" },
+    { id: "timeline3Value", label: "Timeline 3 Wert", type: "textarea", multiline: true },
+    { id: "publisher", label: "Publisher", type: "text" },
+    { id: "brand", label: "Brand", type: "text" }
+  ],
+  defaults: {
+    tagText: "IQWiG-Bewertung veröffentlicht · §35a SGB V",
+    badgeText: "IQWiG out",
+    drugName: "Wirkstoff",
+    indicationTitle: "– Indikation",
+    indicationLine: "Therapiegebiet · Setting · Population",
+    timeline1Label: "IQWiG veröffentlicht",
+    timeline1Value: "TT.MM.JJJJ",
+    timeline2Label: "Stellungnahme bis",
+    timeline2Value: "TT.MM.JJJJ",
+    timeline3Label: "IQWiG Einschätzung",
+    timeline3Value: "Gruppe 1: Anhaltspunkt geringer Zusatznutzen\nGruppe 2: Zusatznutzen nicht belegt",
+    publisher: "Hans Hirsch · co.faktor",
+    brand: "G-BA <em>Digest</em>"
+  }
+};
