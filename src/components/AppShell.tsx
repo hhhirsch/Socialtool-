@@ -1,6 +1,5 @@
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useAppState } from '../hooks/useAppState';
-import { exportPdf } from '../utils/exportPdf';
 import { exportPng } from '../utils/exportPng';
 import { generateFilename } from '../utils/generateFilename';
 import { copySlideHtml } from '../utils/generateSlideHtml';
@@ -8,7 +7,6 @@ import { buildPreviewDocument } from '../utils/previewDocument';
 import { getPresetById } from '../utils/presets';
 import { renderTemplate } from '../utils/renderTemplate';
 import { getTemplateById, getTemplates } from '../utils/templateRegistry';
-import { BottomActionBar } from './BottomActionBar';
 import { DynamicFieldForm } from './DynamicFieldForm';
 import { ErrorBanner } from './ErrorBanner';
 import { PresetSelector } from './PresetSelector';
@@ -22,6 +20,7 @@ import styles from './AppShell.module.css';
 export function AppShell() {
   const templates = useMemo(() => getTemplates(), []);
   const previewFrameRef = useRef<HTMLIFrameElement>(null);
+  const [copied, setCopied] = useState(false);
   const {
     state,
     toast,
@@ -80,30 +79,16 @@ export function AppShell() {
     }
   }, [previewDocumentHtml, selectedPreset, selectedTemplate, showError]);
 
-  const handleExportPdf = useCallback(async () => {
-    try {
-      await exportPdf(previewDocumentHtml, selectedPreset.width, selectedPreset.height);
-    } catch (exportError) {
-      showError(
-        `PDF-Export fehlgeschlagen: ${
-          exportError instanceof Error ? exportError.message : 'Unbekannter Fehler'
-        }`
-      );
-    }
-  }, [previewDocumentHtml, selectedPreset.height, selectedPreset.width, showError]);
-
   const handleCopyHtml = useCallback(async () => {
     try {
       await copySlideHtml(selectedTemplate, resolvedFieldValues, selectedPreset.width, selectedPreset.height);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
       showToast('HTML in die Zwischenablage kopiert.');
     } catch {
       showError('HTML konnte nicht in die Zwischenablage kopiert werden.');
     }
   }, [selectedTemplate, resolvedFieldValues, selectedPreset.width, selectedPreset.height, showToast, showError]);
-
-  const handleTabAction = useCallback(() => {
-    setActiveTab(state.activeTab === 'preview' ? 'content' : 'preview');
-  }, [setActiveTab, state.activeTab]);
 
   const handleLibrarySelect = useCallback(
     (templateId: string) => {
@@ -188,21 +173,70 @@ export function AppShell() {
                 values={state.fieldValues}
                 onChange={updateFieldValue}
               />
+
+              <button
+                type="button"
+                onClick={() => setActiveTab('preview')}
+                className={styles.previewCtaButton}
+              >
+                Vorschau ansehen →
+              </button>
             </section>
           </div>
         )}
 
         {state.activeTab === 'preview' && (
-          <PreviewPanel
-            documentHtml={previewDocumentHtml}
-            preset={selectedPreset}
-            backgroundMode={state.backgroundMode}
-            zoomLevel={state.zoomLevel}
-            onBackgroundChange={setBackgroundMode}
-            onZoomChange={setZoomLevel}
-            onScaleChange={setPreviewScale}
-            frameRef={previewFrameRef}
-          />
+          <div>
+            <div className={styles.previewHeader}>
+              <span className={styles.previewDimension}>
+                {selectedPreset.width} × {selectedPreset.height} px
+              </span>
+              <div className={styles.previewHeaderActions}>
+                <button
+                  type="button"
+                  onClick={() => { resetFieldValues(); setActiveTab('content'); }}
+                  className={styles.previewResetButton}
+                >
+                  Reset
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('content')}
+                  className={styles.previewEditButton}
+                >
+                  ← Bearbeiten
+                </button>
+              </div>
+            </div>
+
+            <PreviewPanel
+              documentHtml={previewDocumentHtml}
+              preset={selectedPreset}
+              backgroundMode={state.backgroundMode}
+              zoomLevel={state.zoomLevel}
+              onBackgroundChange={setBackgroundMode}
+              onZoomChange={setZoomLevel}
+              onScaleChange={setPreviewScale}
+              frameRef={previewFrameRef}
+            />
+
+            <div className={styles.exportGrid}>
+              <button
+                type="button"
+                onClick={handleExportPng}
+                className={styles.exportPrimaryButton}
+              >
+                PNG exportieren
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyHtml}
+                className={`${styles.exportSecondaryButton} ${copied ? styles.exportSecondaryButtonCopied : ''}`}
+              >
+                {copied ? '✓ Kopiert' : 'HTML kopieren'}
+              </button>
+            </div>
+          </div>
         )}
 
         {state.activeTab === 'templates' && (
@@ -257,15 +291,6 @@ export function AppShell() {
           </div>
         )}
       </main>
-
-      <BottomActionBar
-        activeTab={state.activeTab}
-        onTabAction={handleTabAction}
-        onExportPng={handleExportPng}
-        onExportPdf={handleExportPdf}
-        onCopyHtml={handleCopyHtml}
-        onReset={resetFieldValues}
-      />
 
       <ToastMessage message={toast} />
     </div>
