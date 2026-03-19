@@ -28,6 +28,19 @@ export interface TemplateField {
   optionGroups?: Record<string, TemplateOption[]>;
 }
 
+export interface TemplateFieldGroup {
+  id: string;
+  label: string;
+  type: 'group';
+  fields: TemplateField[];
+  minItems?: number;
+  maxItems?: number;
+  addButtonLabel?: string;
+  removeButtonLabel?: string;
+}
+
+export type TemplateFieldDefinition = TemplateField | TemplateFieldGroup;
+
 export interface GraphicTemplate {
   id: string;
   name: string;
@@ -35,8 +48,9 @@ export interface GraphicTemplate {
   supportedPresetIds: string[];
   htmlTemplate: string;
   css: string;
-  fields: TemplateField[];
+  fields: TemplateFieldDefinition[];
   defaults: Record<string, string>;
+  rawHtmlPlaceholders?: string[];
   resolveFieldValues?: (fieldValues: FieldValues) => FieldValues;
 }
 

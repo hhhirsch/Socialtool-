@@ -14,7 +14,12 @@ export function generateSlideHtml(
   height: number
 ): string {
   const resolvedValues = template.resolveFieldValues?.(fieldValues) ?? fieldValues;
-  const renderedHtml = renderTemplate(template.htmlTemplate, resolvedValues, template.fields);
+  const renderedHtml = renderTemplate(
+    template.htmlTemplate,
+    resolvedValues,
+    template.fields,
+    template.rawHtmlPlaceholders
+  );
   return buildPreviewDocument(renderedHtml, template.css, width, height);
 }
 

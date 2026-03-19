@@ -1,5 +1,9 @@
 export const EXPORT_ROOT_SELECTOR = '[data-export-root]';
 
+export function serializePreviewDocument(document: Document): string {
+  return `<!DOCTYPE html>${document.documentElement.outerHTML}`;
+}
+
 export async function waitForPreviewReady(document: Document): Promise<void> {
   const fontReady =
     'fonts' in document

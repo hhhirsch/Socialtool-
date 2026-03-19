@@ -2,3 +2,81 @@
   display: grid;
   gap: 18px;
 }
+
+.groupSection {
+  display: grid;
+  gap: 14px;
+}
+
+.groupHeader,
+.groupCardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.groupTitle,
+.groupCardTitle {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--gb-text);
+}
+
+.groupMeta {
+  margin: 4px 0 0;
+  font-size: 0.82rem;
+  color: var(--gb-text-soft);
+}
+
+.groupList,
+.groupFields {
+  display: grid;
+  gap: 14px;
+}
+
+.groupCard {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  background: rgba(255,255,255,0.03);
+}
+
+.groupAddButton,
+.groupRemoveButton {
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 999px;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--gb-text);
+  background: rgba(255,255,255,0.04);
+}
+
+.groupAddButton {
+  background: rgba(232,184,75,0.12);
+  border-color: rgba(232,184,75,0.26);
+}
+
+.groupAddButton:disabled,
+.groupRemoveButton:disabled {
+  opacity: 0.45;
+}
+
+@media (max-width: 640px) {
+  .groupHeader,
+  .groupCardHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .groupAddButton,
+  .groupRemoveButton {
+    width: 100%;
+    justify-content: center;
+  }
+}

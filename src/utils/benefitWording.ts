@@ -1,6 +1,12 @@
 import type { TemplateOption } from '../types';
 
 export type EvidenceLevel = 'Beleg' | 'Hinweis' | 'Anhaltspunkt';
+export type BenefitMode = 'standard' | 'orphan_belegt' | 'orphan_nicht_quantifizierbar';
+
+export const STANDARD_BENEFIT_MODE: BenefitMode = 'standard';
+export const ORPHAN_BELEGT_BENEFIT_MODE: BenefitMode = 'orphan_belegt';
+export const ORPHAN_NICHT_QUANTIFIZIERBAR_BENEFIT_MODE: BenefitMode =
+  'orphan_nicht_quantifizierbar';
 
 export type BenefitExtent =
   | 'erheblicher Zusatznutzen'
@@ -44,10 +50,25 @@ export const BENEFIT_EXTENT_OPTIONS: TemplateOption[] = [
   { label: 'Geringerer Nutzen', value: 'geringerer Nutzen' },
 ];
 
+export const BENEFIT_MODE_OPTIONS: TemplateOption[] = [
+  { label: 'Standard', value: STANDARD_BENEFIT_MODE },
+  { label: 'Orphan – belegt', value: ORPHAN_BELEGT_BENEFIT_MODE },
+  { label: 'Orphan – nicht quantifizierbar', value: ORPHAN_NICHT_QUANTIFIZIERBAR_BENEFIT_MODE },
+];
+
 export function getBenefitWording(
   evidenceLevel: string,
-  benefitExtent: string
+  benefitExtent: string,
+  benefitMode: string = STANDARD_BENEFIT_MODE
 ): string {
+  if (benefitMode === ORPHAN_BELEGT_BENEFIT_MODE) {
+    return 'Zusatznutzen gilt aufgrund des Orphan-Drug-Status als belegt';
+  }
+
+  if (benefitMode === ORPHAN_NICHT_QUANTIFIZIERBAR_BENEFIT_MODE) {
+    return 'Anhaltspunkt für nicht quantifizierbaren Zusatznutzen';
+  }
+
   if (benefitExtent === 'kein Zusatznutzen belegt') {
     return 'Zusatznutzen ist nicht belegt';
   }
@@ -66,7 +87,18 @@ export function getBenefitWording(
   return `${prefix} ${extent}`;
 }
 
-export function getBenefitBadgeLabel(benefitExtent: string): string {
+export function getBenefitBadgeLabel(
+  benefitExtent: string,
+  benefitMode: string = STANDARD_BENEFIT_MODE
+): string {
+  if (benefitMode === ORPHAN_BELEGT_BENEFIT_MODE) {
+    return 'Orphan';
+  }
+
+  if (benefitMode === ORPHAN_NICHT_QUANTIFIZIERBAR_BENEFIT_MODE) {
+    return 'Nicht quant.';
+  }
+
   switch (benefitExtent) {
     case 'erheblicher Zusatznutzen':
       return 'Erheblich';
@@ -89,9 +121,10 @@ export function buildOutcomeStatement(
   population: string,
   evidenceLevel: string,
   benefitExtent: string,
-  additionalDescription: string
+  additionalDescription: string,
+  benefitMode: string = STANDARD_BENEFIT_MODE
 ): string {
-  const wording = getBenefitWording(evidenceLevel, benefitExtent);
+  const wording = getBenefitWording(evidenceLevel, benefitExtent, benefitMode);
   const populationPrefix = population.trim() ? `${population.trim()}: ` : '';
   const detailSuffix = additionalDescription.trim() ? ` – ${additionalDescription.trim()}` : '';
 
