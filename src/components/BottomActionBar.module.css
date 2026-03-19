@@ -5,7 +5,7 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   align-items: center;
-  padding: 12px 16px calc(20px + var(--gb-safe-area-bottom));
+  padding: 12px 16px calc(20px + var(--gb-safe-area-inset-bottom));
   background: var(--gb-bg);
   backdrop-filter: blur(18px);
   border-top: 1px solid rgba(232,184,75,0.1);
