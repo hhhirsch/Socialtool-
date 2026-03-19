@@ -1,14 +1,23 @@
 import type { GraphicTemplate } from './types';
 import { sharedBaseCss } from './sharedBaseCss';
-import { BENEFIT_EXTENT_OPTIONS, EVIDENCE_LEVEL_OPTIONS } from '../utils/benefitWording';
+import {
+  BENEFIT_EXTENT_OPTIONS,
+  BENEFIT_MODE_OPTIONS,
+  EVIDENCE_LEVEL_OPTIONS,
+} from '../utils/benefitWording';
 import { INDICATION_AREAS, INDICATION_PRESETS_BY_AREA } from '../utils/indicationPresets';
-import { buildIndicationFields, buildOutcomeFields } from '../utils/templateContent';
+import {
+  buildIndicationFields,
+  buildOutcomeGroupsHtml,
+  escapeTemplateHtml,
+} from '../utils/templateContent';
 
 export const decisionOutTemplate: GraphicTemplate = {
   id: "decision-out",
   name: "Verfahren abgeschlossen",
   description: "Slide für G-BA-Beschlüsse und differenzierte Outcome-Kommunikation.",
   supportedPresetIds: ["1080x1080", "1080x1350", "1200x627"],
+  rawHtmlPlaceholders: ["groupsHtml"],
   htmlTemplate: `
     <div class="slide">
       <div class="grid"></div>
@@ -31,15 +40,7 @@ export const decisionOutTemplate: GraphicTemplate = {
       <div class="s2-outcome">
         <div class="s2-outcome-label">{{outcomeLabel}}</div>
 
-        <div class="s2-outcome-row">
-          <span class="s2-pill s2-pill--primary">{{outcome1Tag}}</span>
-          <span class="s2-outcome-text">{{outcome1Text}}</span>
-        </div>
-
-        <div class="s2-outcome-row">
-          <span class="s2-pill s2-pill--secondary">{{outcome2Tag}}</span>
-          <span class="s2-outcome-text">{{outcome2Text}}</span>
-        </div>
+        {{groupsHtml}}
       </div>
 
       <div class="s2-zvt">
@@ -142,7 +143,7 @@ export const decisionOutTemplate: GraphicTemplate = {
     { id: "tagText", label: "Tag", type: "text" },
     { id: "badgeText", label: "Badge", type: "text" },
     { id: "drugName", label: "Wirkstoff", type: "text" },
-    { id: "indicationArea", label: "Indikationsbereich", type: "select", options: INDICATION_AREAS },
+    { id: "indicationArea", label: "Therapiegebiet", type: "select", options: INDICATION_AREAS },
     {
       id: "indicationPreset",
       label: "Standardindikation",
@@ -159,14 +160,27 @@ export const decisionOutTemplate: GraphicTemplate = {
       helpText: "Nur nutzen, wenn die gewünschte Indikation nicht als Preset hinterlegt ist.",
     },
     { id: "outcomeLabel", label: "Bewertungslabel", type: "text" },
-    { id: "outcome1Population", label: "Outcome 1 Population / Subgruppe", type: "text" },
-    { id: "outcome1EvidenceLevel", label: "Outcome 1 Evidenzniveau", type: "select", options: EVIDENCE_LEVEL_OPTIONS },
-    { id: "outcome1BenefitExtent", label: "Outcome 1 Nutzenausmaß", type: "select", options: BENEFIT_EXTENT_OPTIONS },
-    { id: "outcome1Description", label: "Outcome 1 Zusatzbeschreibung", type: "textarea", multiline: true },
-    { id: "outcome2Population", label: "Outcome 2 Population / Subgruppe", type: "text" },
-    { id: "outcome2EvidenceLevel", label: "Outcome 2 Evidenzniveau", type: "select", options: EVIDENCE_LEVEL_OPTIONS },
-    { id: "outcome2BenefitExtent", label: "Outcome 2 Nutzenausmaß", type: "select", options: BENEFIT_EXTENT_OPTIONS },
-    { id: "outcome2Description", label: "Outcome 2 Zusatzbeschreibung", type: "textarea", multiline: true },
+    {
+      id: "groups",
+      label: "Gruppen",
+      type: "group",
+      minItems: 1,
+      addButtonLabel: "+ Gruppe hinzufügen",
+      removeButtonLabel: "Gruppe entfernen",
+      fields: [
+        { id: "population", label: "Population / Subgruppe", type: "text" },
+        { id: "benefitMode", label: "Nutzenmodus", type: "select", options: BENEFIT_MODE_OPTIONS },
+        { id: "evidenceLevel", label: "Evidenzniveau", type: "select", options: EVIDENCE_LEVEL_OPTIONS },
+        { id: "benefitExtent", label: "Nutzenausmaß", type: "select", options: BENEFIT_EXTENT_OPTIONS },
+        {
+          id: "description",
+          label: "Zusatzbeschreibung",
+          type: "textarea",
+          multiline: true,
+          helpText: "Optional, z. B. „Quantifizierung aufgrund Datenlage nicht möglich“.",
+        },
+      ],
+    },
     { id: "zvtShortLabel", label: "Kurzlabel ZVT", type: "text" },
     { id: "zvtText", label: "ZVT Text", type: "textarea", multiline: true },
     { id: "publisher", label: "Publisher", type: "text" },
@@ -180,14 +194,11 @@ export const decisionOutTemplate: GraphicTemplate = {
     indicationPreset: "NSCLC",
     indicationCustom: "",
     outcomeLabel: "G-BA Bewertung",
-    outcome1Population: "Subgruppe A",
-    outcome1EvidenceLevel: "Hinweis",
-    outcome1BenefitExtent: "beträchtlicher Zusatznutzen",
-    outcome1Description: "bei therapienaiven Erwachsenen",
-    outcome2Population: "Subgruppe B",
-    outcome2EvidenceLevel: "Hinweis",
-    outcome2BenefitExtent: "kein Zusatznutzen belegt",
-    outcome2Description: "",
+    "groups.0.population": "Subgruppe A",
+    "groups.0.benefitMode": "standard",
+    "groups.0.evidenceLevel": "Hinweis",
+    "groups.0.benefitExtent": "beträchtlicher Zusatznutzen",
+    "groups.0.description": "bei therapienaiven Erwachsenen",
     zvtShortLabel: "zVT",
     zvtText: "Vergleichstherapie A oder Vergleichstherapie B (populationsabhängig)",
     publisher: "Hans Hirsch · co.faktor",
@@ -196,7 +207,11 @@ export const decisionOutTemplate: GraphicTemplate = {
   resolveFieldValues: (fieldValues) => ({
     ...fieldValues,
     ...buildIndicationFields(fieldValues),
-    ...buildOutcomeFields(fieldValues, "outcome1"),
-    ...buildOutcomeFields(fieldValues, "outcome2"),
+    groupsHtml: buildOutcomeGroupsHtml(fieldValues, (group, index) => `
+      <div class="s2-outcome-row">
+        <span class="${index === 0 ? 's2-pill s2-pill--primary' : 's2-pill s2-pill--secondary'}">${escapeTemplateHtml(group.tag)}</span>
+        <span class="s2-outcome-text">${escapeTemplateHtml(group.text)}</span>
+      </div>
+    `),
   }),
 };

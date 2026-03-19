@@ -1,6 +1,7 @@
 import type { TemplateOption } from '../types';
 
 export type EvidenceLevel = 'Beleg' | 'Hinweis' | 'Anhaltspunkt';
+export type BenefitMode = 'standard' | 'orphan_belegt' | 'orphan_nicht_quantifizierbar';
 
 export type BenefitExtent =
   | 'erheblicher Zusatznutzen'
@@ -44,10 +45,25 @@ export const BENEFIT_EXTENT_OPTIONS: TemplateOption[] = [
   { label: 'Geringerer Nutzen', value: 'geringerer Nutzen' },
 ];
 
+export const BENEFIT_MODE_OPTIONS: TemplateOption[] = [
+  { label: 'Standard', value: 'standard' },
+  { label: 'Orphan – belegt', value: 'orphan_belegt' },
+  { label: 'Orphan – nicht quantifizierbar', value: 'orphan_nicht_quantifizierbar' },
+];
+
 export function getBenefitWording(
   evidenceLevel: string,
-  benefitExtent: string
+  benefitExtent: string,
+  benefitMode: string = 'standard'
 ): string {
+  if (benefitMode === 'orphan_belegt') {
+    return 'Zusatznutzen gilt aufgrund des Orphan-Drug-Status als belegt';
+  }
+
+  if (benefitMode === 'orphan_nicht_quantifizierbar') {
+    return 'Anhaltspunkt für nicht quantifizierbaren Zusatznutzen';
+  }
+
   if (benefitExtent === 'kein Zusatznutzen belegt') {
     return 'Zusatznutzen ist nicht belegt';
   }
@@ -66,7 +82,15 @@ export function getBenefitWording(
   return `${prefix} ${extent}`;
 }
 
-export function getBenefitBadgeLabel(benefitExtent: string): string {
+export function getBenefitBadgeLabel(benefitExtent: string, benefitMode: string = 'standard'): string {
+  if (benefitMode === 'orphan_belegt') {
+    return 'Orphan';
+  }
+
+  if (benefitMode === 'orphan_nicht_quantifizierbar') {
+    return 'Nicht quant.';
+  }
+
   switch (benefitExtent) {
     case 'erheblicher Zusatznutzen':
       return 'Erheblich';
@@ -89,9 +113,10 @@ export function buildOutcomeStatement(
   population: string,
   evidenceLevel: string,
   benefitExtent: string,
-  additionalDescription: string
+  additionalDescription: string,
+  benefitMode: string = 'standard'
 ): string {
-  const wording = getBenefitWording(evidenceLevel, benefitExtent);
+  const wording = getBenefitWording(evidenceLevel, benefitExtent, benefitMode);
   const populationPrefix = population.trim() ? `${population.trim()}: ` : '';
   const detailSuffix = additionalDescription.trim() ? ` – ${additionalDescription.trim()}` : '';
 

@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useAppState } from '../hooks/useAppState';
 import { exportPng } from '../utils/exportPng';
+import { exportPdf } from '../utils/exportPdf';
 import { generateFilename } from '../utils/generateFilename';
 import { copySlideHtml } from '../utils/generateSlideHtml';
 import { buildPreviewDocument } from '../utils/previewDocument';
@@ -32,6 +33,8 @@ export function AppShell() {
     selectTemplate,
     selectPreset,
     updateFieldValue,
+    addFieldGroupItem,
+    removeFieldGroupItem,
     resetFieldValues,
     loadExampleContent,
     setBackgroundMode,
@@ -53,8 +56,19 @@ export function AppShell() {
   );
 
   const renderedHtml = useMemo(
-    () => renderTemplate(selectedTemplate.htmlTemplate, resolvedFieldValues, selectedTemplate.fields),
-    [resolvedFieldValues, selectedTemplate.fields, selectedTemplate.htmlTemplate]
+    () =>
+      renderTemplate(
+        selectedTemplate.htmlTemplate,
+        resolvedFieldValues,
+        selectedTemplate.fields,
+        selectedTemplate.rawHtmlPlaceholders
+      ),
+    [
+      resolvedFieldValues,
+      selectedTemplate.fields,
+      selectedTemplate.htmlTemplate,
+      selectedTemplate.rawHtmlPlaceholders,
+    ]
   );
   const previewDocumentHtml = useMemo(
     () => buildPreviewDocument(renderedHtml, selectedTemplate.css, selectedPreset.width, selectedPreset.height),
@@ -89,6 +103,23 @@ export function AppShell() {
       showError('HTML konnte nicht in die Zwischenablage kopiert werden.');
     }
   }, [selectedTemplate, resolvedFieldValues, selectedPreset.width, selectedPreset.height, showToast, showError]);
+
+  const handleExportPdf = useCallback(async () => {
+    try {
+      await exportPdf(
+        previewDocumentHtml,
+        selectedPreset.width,
+        selectedPreset.height,
+        previewFrameRef.current
+      );
+    } catch (exportError) {
+      showError(
+        `PDF-Export fehlgeschlagen: ${
+          exportError instanceof Error ? exportError.message : 'Unbekannter Fehler'
+        }`
+      );
+    }
+  }, [previewDocumentHtml, selectedPreset.height, selectedPreset.width, showError]);
 
   const handleLibrarySelect = useCallback(
     (templateId: string) => {
@@ -172,6 +203,8 @@ export function AppShell() {
                 fields={selectedTemplate.fields}
                 values={state.fieldValues}
                 onChange={updateFieldValue}
+                onAddGroup={addFieldGroupItem}
+                onRemoveGroup={removeFieldGroupItem}
               />
 
               <button
@@ -227,6 +260,13 @@ export function AppShell() {
                 className={styles.exportPrimaryButton}
               >
                 PNG exportieren
+              </button>
+              <button
+                type="button"
+                onClick={handleExportPdf}
+                className={styles.exportSecondaryButton}
+              >
+                PDF exportieren
               </button>
               <button
                 type="button"

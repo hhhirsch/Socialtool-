@@ -1,14 +1,23 @@
 import type { GraphicTemplate } from './types';
 import { sharedBaseCss } from './sharedBaseCss';
-import { BENEFIT_EXTENT_OPTIONS, EVIDENCE_LEVEL_OPTIONS } from '../utils/benefitWording';
+import {
+  BENEFIT_EXTENT_OPTIONS,
+  BENEFIT_MODE_OPTIONS,
+  EVIDENCE_LEVEL_OPTIONS,
+} from '../utils/benefitWording';
 import { INDICATION_AREAS, INDICATION_PRESETS_BY_AREA } from '../utils/indicationPresets';
-import { buildIndicationFields, buildOutcomeFields } from '../utils/templateContent';
+import {
+  buildIndicationFields,
+  buildOutcomeGroupsHtml,
+  escapeTemplateHtml,
+} from '../utils/templateContent';
 
 export const iqwigOutTemplate: GraphicTemplate = {
   id: "iqwig-out",
   name: "IQWiG Bewertung",
   description: "Timeline-orientierte Slide für veröffentlichte IQWiG-Bewertungen.",
   supportedPresetIds: ["1080x1080", "1080x1350", "1200x627"],
+  rawHtmlPlaceholders: ["groupsHtml"],
   htmlTemplate: `
     <div class="slide">
       <div class="grid"></div>
@@ -49,14 +58,7 @@ export const iqwigOutTemplate: GraphicTemplate = {
           <div>
             <div class="s3-tl-label">{{timeline3Label}}</div>
             <div class="s3-assessment">
-              <div class="s3-assessment-row">
-                <span class="s3-pill">{{outcome1Tag}}</span>
-                <div class="s3-tl-value">{{outcome1Text}}</div>
-              </div>
-              <div class="s3-assessment-row">
-                <span class="s3-pill s3-pill--muted">{{outcome2Tag}}</span>
-                <div class="s3-tl-value s3-tl-value--muted">{{outcome2Text}}</div>
-              </div>
+              {{groupsHtml}}
             </div>
           </div>
         </div>
@@ -183,7 +185,7 @@ export const iqwigOutTemplate: GraphicTemplate = {
     { id: "tagText", label: "Tag", type: "text" },
     { id: "badgeText", label: "Badge", type: "text" },
     { id: "drugName", label: "Wirkstoff", type: "text" },
-    { id: "indicationArea", label: "Indikationsbereich", type: "select", options: INDICATION_AREAS },
+    { id: "indicationArea", label: "Therapiegebiet", type: "select", options: INDICATION_AREAS },
     {
       id: "indicationPreset",
       label: "Standardindikation",
@@ -204,14 +206,27 @@ export const iqwigOutTemplate: GraphicTemplate = {
     { id: "timeline2Label", label: "Timeline 2 Label", type: "text" },
     { id: "timeline2Value", label: "Timeline 2 Datum", type: "date" },
     { id: "timeline3Label", label: "Timeline 3 Label", type: "text" },
-    { id: "outcome1Population", label: "Outcome 1 Population / Subgruppe", type: "text" },
-    { id: "outcome1EvidenceLevel", label: "Outcome 1 Evidenzniveau", type: "select", options: EVIDENCE_LEVEL_OPTIONS },
-    { id: "outcome1BenefitExtent", label: "Outcome 1 Nutzenausmaß", type: "select", options: BENEFIT_EXTENT_OPTIONS },
-    { id: "outcome1Description", label: "Outcome 1 Zusatzbeschreibung", type: "textarea", multiline: true },
-    { id: "outcome2Population", label: "Outcome 2 Population / Subgruppe", type: "text" },
-    { id: "outcome2EvidenceLevel", label: "Outcome 2 Evidenzniveau", type: "select", options: EVIDENCE_LEVEL_OPTIONS },
-    { id: "outcome2BenefitExtent", label: "Outcome 2 Nutzenausmaß", type: "select", options: BENEFIT_EXTENT_OPTIONS },
-    { id: "outcome2Description", label: "Outcome 2 Zusatzbeschreibung", type: "textarea", multiline: true },
+    {
+      id: "groups",
+      label: "Gruppen",
+      type: "group",
+      minItems: 1,
+      addButtonLabel: "+ Gruppe hinzufügen",
+      removeButtonLabel: "Gruppe entfernen",
+      fields: [
+        { id: "population", label: "Population / Subgruppe", type: "text" },
+        { id: "benefitMode", label: "Nutzenmodus", type: "select", options: BENEFIT_MODE_OPTIONS },
+        { id: "evidenceLevel", label: "Evidenzniveau", type: "select", options: EVIDENCE_LEVEL_OPTIONS },
+        { id: "benefitExtent", label: "Nutzenausmaß", type: "select", options: BENEFIT_EXTENT_OPTIONS },
+        {
+          id: "description",
+          label: "Zusatzbeschreibung",
+          type: "textarea",
+          multiline: true,
+          helpText: "Optional, z. B. „Quantifizierung aufgrund Datenlage nicht möglich“.",
+        },
+      ],
+    },
     { id: "publisher", label: "Publisher", type: "text" },
     { id: "brand", label: "Brand", type: "text" }
   ],
@@ -227,21 +242,22 @@ export const iqwigOutTemplate: GraphicTemplate = {
     timeline2Label: "Stellungnahme bis",
     timeline2Value: "2026-06-10",
     timeline3Label: "IQWiG Einschätzung",
-    outcome1Population: "Gruppe 1",
-    outcome1EvidenceLevel: "Anhaltspunkt",
-    outcome1BenefitExtent: "geringer Zusatznutzen",
-    outcome1Description: "",
-    outcome2Population: "Gruppe 2",
-    outcome2EvidenceLevel: "Hinweis",
-    outcome2BenefitExtent: "kein Zusatznutzen belegt",
-    outcome2Description: "",
+    "groups.0.population": "Gruppe 1",
+    "groups.0.benefitMode": "standard",
+    "groups.0.evidenceLevel": "Anhaltspunkt",
+    "groups.0.benefitExtent": "geringer Zusatznutzen",
+    "groups.0.description": "",
     publisher: "Hans Hirsch · co.faktor",
     brand: "G-BA <em>Digest</em>"
   },
   resolveFieldValues: (fieldValues) => ({
     ...fieldValues,
     ...buildIndicationFields(fieldValues),
-    ...buildOutcomeFields(fieldValues, "outcome1"),
-    ...buildOutcomeFields(fieldValues, "outcome2"),
+    groupsHtml: buildOutcomeGroupsHtml(fieldValues, (group, index) => `
+      <div class="s3-assessment-row">
+        <span class="${index === 0 ? 's3-pill' : 's3-pill s3-pill--muted'}">${escapeTemplateHtml(group.tag)}</span>
+        <div class="${index === 0 ? 's3-tl-value' : 's3-tl-value s3-tl-value--muted'}">${escapeTemplateHtml(group.text)}</div>
+      </div>
+    `),
   }),
 };

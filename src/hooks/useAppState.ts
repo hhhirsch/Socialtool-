@@ -4,8 +4,11 @@ import type { AppState, BackgroundMode, TabId, ZoomLevel } from '../types';
 import { useDebouncedEffect } from './useDebounce';
 import { loadState, saveState } from '../utils/storage';
 import {
+  getGroupFieldIndices,
+  getGroupFieldKey,
   ensureCompatiblePresetId,
   getTemplateById,
+  isTemplateFieldGroup,
   isValidTemplateId,
   mergeTemplateFieldValues,
   getTemplateDefaults,
@@ -135,6 +138,89 @@ export function useAppState() {
     }));
   }, []);
 
+  const addFieldGroupItem = useCallback((groupId: string) => {
+    setState((currentState) => {
+      const template = getTemplateById(currentState.selectedTemplateId);
+      const group = template.fields.find(
+        (field): field is Extract<(typeof template.fields)[number], { type: 'group' }> =>
+          isTemplateFieldGroup(field) && field.id === groupId
+      );
+
+      if (!group) {
+        return currentState;
+      }
+
+      const indices = getGroupFieldIndices(group, currentState.fieldValues);
+      if (group.maxItems && indices.length >= group.maxItems) {
+        return currentState;
+      }
+
+      const nextIndex = (indices.at(-1) ?? -1) + 1;
+      const nextValues = { ...currentState.fieldValues };
+
+      for (const field of group.fields) {
+        const key = getGroupFieldKey(group.id, nextIndex, field.id);
+        nextValues[key] = template.defaults[key] ?? field.defaultValue ?? '';
+      }
+
+      return {
+        ...currentState,
+        fieldValues: normalizeTemplateFieldValues(template, nextValues),
+      };
+    });
+  }, []);
+
+  const removeFieldGroupItem = useCallback((groupId: string, indexToRemove: number) => {
+    setState((currentState) => {
+      const template = getTemplateById(currentState.selectedTemplateId);
+      const group = template.fields.find(
+        (field): field is Extract<(typeof template.fields)[number], { type: 'group' }> =>
+          isTemplateFieldGroup(field) && field.id === groupId
+      );
+
+      if (!group) {
+        return currentState;
+      }
+
+      const indices = getGroupFieldIndices(group, currentState.fieldValues);
+      const minimumItems = group.minItems ?? 1;
+      if (indices.length <= minimumItems) {
+        return currentState;
+      }
+
+      const nextValues = Object.entries(currentState.fieldValues).reduce<Record<string, string>>(
+        (accumulator, [key, value]) => {
+          const match = key.match(new RegExp(`^${group.id}\\.(\\d+)\\.([^.]+)$`));
+
+          if (!match) {
+            accumulator[key] = value;
+            return accumulator;
+          }
+
+          const currentIndex = Number(match[1]);
+          const fieldId = match[2];
+
+          if (!group.fields.some((field) => field.id === fieldId) || currentIndex < indexToRemove) {
+            accumulator[key] = value;
+            return accumulator;
+          }
+
+          if (currentIndex > indexToRemove) {
+            accumulator[getGroupFieldKey(group.id, currentIndex - 1, fieldId)] = value;
+          }
+
+          return accumulator;
+        },
+        {}
+      );
+
+      return {
+        ...currentState,
+        fieldValues: normalizeTemplateFieldValues(template, nextValues),
+      };
+    });
+  }, []);
+
   const resetFieldValues = useCallback(() => {
     const template = getTemplateById(state.selectedTemplateId);
     setState((currentState) => ({
@@ -177,6 +263,8 @@ export function useAppState() {
     selectTemplate,
     selectPreset,
     updateFieldValue,
+    addFieldGroupItem,
+    removeFieldGroupItem,
     resetFieldValues,
     loadExampleContent,
     setBackgroundMode,

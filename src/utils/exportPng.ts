@@ -11,35 +11,34 @@ export async function exportPng(
   filename: string,
   liveFrame?: HTMLIFrameElement | null
 ): Promise<void> {
-  const mountNode = document.createElement('div');
-  mountNode.style.position = 'fixed';
-  mountNode.style.inset = '0 auto auto -99999px';
-  mountNode.style.width = `${width}px`;
-  mountNode.style.height = `${height}px`;
-  document.body.appendChild(mountNode);
-
-  const iframe = document.createElement('iframe');
-  iframe.setAttribute('sandbox', 'allow-same-origin');
-  iframe.style.width = `${width}px`;
-  iframe.style.height = `${height}px`;
-  iframe.style.border = '0';
-  mountNode.appendChild(iframe);
+  let mountNode: HTMLDivElement | null = null;
 
   try {
-    let exportDocumentHtml = documentHtml;
-
+    let graphicRoot: HTMLElement;
     if (liveFrame) {
       const liveDocument = await waitForIframeDocument(liveFrame);
       await waitForPreviewReady(liveDocument);
-      getExportRoot(liveDocument);
-      exportDocumentHtml = liveFrame.srcdoc || documentHtml;
+      graphicRoot = getExportRoot(liveDocument);
+    } else {
+      mountNode = document.createElement('div');
+      mountNode.style.position = 'fixed';
+      mountNode.style.inset = '0 auto auto -99999px';
+      mountNode.style.width = `${width}px`;
+      mountNode.style.height = `${height}px`;
+      document.body.appendChild(mountNode);
+
+      const iframe = document.createElement('iframe');
+      iframe.setAttribute('sandbox', 'allow-same-origin');
+      iframe.style.width = `${width}px`;
+      iframe.style.height = `${height}px`;
+      iframe.style.border = '0';
+      mountNode.appendChild(iframe);
+
+      const exportDocument = await waitForIframeDocument(iframe, documentHtml);
+      await waitForPreviewReady(exportDocument);
+      graphicRoot = getExportRoot(exportDocument);
     }
 
-    const exportDocument = await waitForIframeDocument(iframe, exportDocumentHtml);
-
-    await waitForPreviewReady(exportDocument);
-
-    const graphicRoot = getExportRoot(exportDocument);
     const canvas = await html2canvas(graphicRoot, {
       width,
       height,
@@ -73,6 +72,6 @@ export async function exportPng(
   } catch (error) {
     throw error instanceof Error ? error : new Error(String(error));
   } finally {
-    mountNode.remove();
+    mountNode?.remove();
   }
 }

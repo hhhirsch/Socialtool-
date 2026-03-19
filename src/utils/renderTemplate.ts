@@ -1,4 +1,4 @@
-import type { FieldValues, TemplateField } from '../types';
+import type { FieldValues, TemplateFieldDefinition } from '../types';
 import { formatGermanDate } from './dateFormatting';
 
 function escapeHtml(value: string): string {
@@ -17,13 +17,24 @@ function escapeHtml(value: string): string {
 export function renderTemplate(
   htmlTemplate: string,
   fieldValues: FieldValues,
-  fields: TemplateField[]
+  fields: TemplateFieldDefinition[],
+  rawHtmlPlaceholders: string[] = []
 ): string {
-  const fieldMap = new Map(fields.map((field) => [field.id, field]));
+  const fieldMap = new Map(
+    fields
+      .filter((field) => field.type !== 'group')
+      .map((field) => [field.id, field])
+  );
+  const rawHtmlPlaceholderSet = new Set(rawHtmlPlaceholders);
 
   return htmlTemplate.replace(/{{\s*([a-zA-Z0-9_-]+)\s*}}/g, (_, placeholder: string) => {
     const field = fieldMap.get(placeholder);
     const rawValue = fieldValues[placeholder] ?? field?.defaultValue ?? '';
+
+    if (rawHtmlPlaceholderSet.has(placeholder)) {
+      return rawValue;
+    }
+
     const displayValue = field?.type === 'date' ? formatGermanDate(rawValue) : rawValue;
     const safeValue = escapeHtml(displayValue);
 

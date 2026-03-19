@@ -143,7 +143,7 @@ export const toWatchTemplate: GraphicTemplate = {
     { id: "badgeText", label: "Badge", type: "text" },
     { id: "eyebrow", label: "Eyebrow", type: "text" },
     { id: "drugName", label: "Wirkstoff", type: "text" },
-    { id: "indicationArea", label: "Indikationsbereich", type: "select", options: INDICATION_AREAS },
+    { id: "indicationArea", label: "Therapiegebiet", type: "select", options: INDICATION_AREAS },
     {
       id: "indicationPreset",
       label: "Standardindikation",
