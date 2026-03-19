@@ -1,5 +1,9 @@
 import type { FieldValues } from '../types';
-import { buildOutcomeStatement, getBenefitBadgeLabel } from './benefitWording';
+import {
+  buildOutcomeStatement,
+  getBenefitBadgeLabel,
+  STANDARD_BENEFIT_MODE,
+} from './benefitWording';
 import { resolveIndication } from './indicationPresets';
 
 export interface OutcomeGroupContent {
@@ -48,7 +52,7 @@ export function getOutcomeGroups(fieldValues: FieldValues, groupId = 'groups'): 
     const population = fieldValues[`${groupId}.${index}.population`] ?? '';
     const evidenceLevel = fieldValues[`${groupId}.${index}.evidenceLevel`] ?? '';
     const benefitExtent = fieldValues[`${groupId}.${index}.benefitExtent`] ?? '';
-    const benefitMode = fieldValues[`${groupId}.${index}.benefitMode`] ?? 'standard';
+    const benefitMode = fieldValues[`${groupId}.${index}.benefitMode`] ?? STANDARD_BENEFIT_MODE;
     const description = fieldValues[`${groupId}.${index}.description`] ?? '';
 
     return {
