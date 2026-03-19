@@ -14,22 +14,25 @@
 
 .title {
   font-size: 1.1rem;
-  color: #0f172a;
+  color: var(--gb-text);
+  font-weight: 600;
 }
 
 .meta,
 .controlLabel {
   font-size: 0.88rem;
-  color: #64748b;
+  color: var(--gb-text-soft);
 }
 
 .scaleBadge {
   display: inline-flex;
-  padding: 8px 12px;
+  padding: 6px 12px;
   border-radius: 999px;
-  background: #dbeafe;
-  color: #1d4ed8;
-  font-weight: 800;
+  background: var(--gb-gold-faint);
+  border: 1px solid var(--gb-border-gold);
+  color: var(--gb-gold-dim);
+  font-weight: 600;
+  font-size: 0.85rem;
 }
 
 .controlRow {
@@ -51,6 +54,7 @@
   overflow: auto;
   display: grid;
   place-items: center;
+  background: rgba(0,0,0,0.2);
 }
 
 .frameBounds {
@@ -62,18 +66,18 @@
 }
 
 .gray {
-  background: #e2e8f0;
+  background: #334155;
 }
 
 .transparent {
   background-image:
-    linear-gradient(45deg, #dbe4f0 25%, transparent 25%),
-    linear-gradient(-45deg, #dbe4f0 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, #dbe4f0 75%),
-    linear-gradient(-45deg, transparent 75%, #dbe4f0 75%);
+    linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255,255,255,0.05) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.05) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.05) 75%);
   background-size: 20px 20px;
   background-position: 0 0, 0 10px, 10px -10px, -10px 0;
-  background-color: #f8fafc;
+  background-color: rgba(0,0,0,0.25);
 }
 
 @media (max-width: 640px) {

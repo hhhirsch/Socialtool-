@@ -5,28 +5,38 @@
 
 .card {
   width: 100%;
-  border: 1px solid #dbe3ef;
+  border: 1px solid var(--gb-border-sub);
   border-radius: 18px;
-  background: white;
+  background: rgba(255,255,255,0.02);
   padding: 16px;
   text-align: left;
   display: grid;
   gap: 6px;
   font: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.card:hover {
+  background: rgba(255,255,255,0.04);
 }
 
 .cardActive {
-  border-color: #2563eb;
-  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.12);
+  border-color: rgba(232,184,75,0.4);
+  background: var(--gb-gold-faint);
 }
 
 .name {
-  font-weight: 800;
-  color: #0f172a;
+  font-weight: 600;
+  color: var(--gb-text);
+}
+
+.cardActive .name {
+  color: var(--gb-gold);
 }
 
 .description {
   font-size: 0.92rem;
   line-height: 1.4;
-  color: #475569;
+  color: var(--gb-text-soft);
 }
