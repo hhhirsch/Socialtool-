@@ -67,7 +67,10 @@ export async function exportPng(
     const link = document.createElement('a');
     link.href = downloadUrl;
     link.download = `${filename}.png`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
     link.click();
+    link.remove();
     URL.revokeObjectURL(downloadUrl);
   } catch (error) {
     throw error instanceof Error ? error : new Error(String(error));
