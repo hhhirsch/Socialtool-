@@ -1,37 +1,15 @@
 import html2canvas from 'html2canvas';
-import { buildPreviewDocument } from './previewDocument';
-
-async function waitForAssets(document: Document): Promise<void> {
-  const fontReady = 'fonts' in document ? (document.fonts.ready.catch(() => undefined) as Promise<unknown>) : Promise.resolve();
-  const images = Array.from(document.images);
-
-  await Promise.all([
-    fontReady,
-    ...images.map(
-      (image) =>
-        image.complete
-          ? Promise.resolve()
-          : new Promise<void>((resolve) => {
-              image.addEventListener('load', () => resolve(), { once: true });
-              image.addEventListener('error', () => resolve(), { once: true });
-            })
-    ),
-  ]);
-
-  await new Promise<void>((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-  });
-}
+import { getExportRoot, waitForIframeDocument, waitForPreviewReady } from './previewExport';
 
 /**
  * Exports the isolated graphic in its original preset resolution.
  */
 export async function exportPng(
-  html: string,
-  css: string,
+  documentHtml: string,
   width: number,
   height: number,
-  filename: string
+  filename: string,
+  liveFrame?: HTMLIFrameElement | null
 ): Promise<void> {
   const mountNode = document.createElement('div');
   mountNode.style.position = 'fixed';
@@ -48,30 +26,27 @@ export async function exportPng(
   mountNode.appendChild(iframe);
 
   try {
-    await new Promise<void>((resolve, reject) => {
-      iframe.onload = () => resolve();
-      iframe.onerror = () => reject(new Error('Vorschau für PNG-Export konnte nicht geladen werden.'));
-      iframe.srcdoc = buildPreviewDocument(html, css, width, height);
-    });
+    let exportDocumentHtml = documentHtml;
 
-    const exportDocument = iframe.contentDocument;
-    if (!exportDocument) {
-      throw new Error('Exportdokument konnte nicht gelesen werden.');
+    if (liveFrame) {
+      const liveDocument = await waitForIframeDocument(liveFrame);
+      await waitForPreviewReady(liveDocument);
+      getExportRoot(liveDocument);
+      exportDocumentHtml = liveFrame.srcdoc || documentHtml;
     }
 
-    await waitForAssets(exportDocument);
+    const exportDocument = await waitForIframeDocument(iframe, exportDocumentHtml);
 
-    const graphicRoot = exportDocument.getElementById('graphic-root');
-    if (!(graphicRoot instanceof HTMLElement)) {
-      throw new Error('Grafikinhalt für den Export wurde nicht gefunden.');
-    }
+    await waitForPreviewReady(exportDocument);
 
+    const graphicRoot = getExportRoot(exportDocument);
     const canvas = await html2canvas(graphicRoot, {
       width,
       height,
       scale: 1,
       backgroundColor: null,
       allowTaint: false,
+      foreignObjectRendering: true,
       useCORS: true,
       logging: false,
       windowWidth: width,
@@ -95,6 +70,8 @@ export async function exportPng(
     link.download = `${filename}.png`;
     link.click();
     URL.revokeObjectURL(downloadUrl);
+  } catch (error) {
+    throw error instanceof Error ? error : new Error(String(error));
   } finally {
     mountNode.remove();
   }

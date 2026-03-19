@@ -25,3 +25,9 @@
   background: #0f172a;
   color: white;
 }
+
+@media (max-width: 420px) {
+  .compact {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

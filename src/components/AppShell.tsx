@@ -1,8 +1,9 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { useAppState } from '../hooks/useAppState';
 import { exportPdf } from '../utils/exportPdf';
 import { exportPng } from '../utils/exportPng';
 import { generateFilename } from '../utils/generateFilename';
+import { buildPreviewDocument } from '../utils/previewDocument';
 import { getPresetById } from '../utils/presets';
 import { renderTemplate } from '../utils/renderTemplate';
 import { getTemplateById, getTemplates } from '../utils/templateRegistry';
@@ -19,6 +20,7 @@ import styles from './AppShell.module.css';
 
 export function AppShell() {
   const templates = useMemo(() => getTemplates(), []);
+  const previewFrameRef = useRef<HTMLIFrameElement>(null);
   const {
     state,
     toast,
@@ -44,20 +46,28 @@ export function AppShell() {
     () => getPresetById(state.selectedPresetId),
     [state.selectedPresetId]
   );
+  const resolvedFieldValues = useMemo(
+    () => selectedTemplate.resolveFieldValues?.(state.fieldValues) ?? state.fieldValues,
+    [selectedTemplate, state.fieldValues]
+  );
 
   const renderedHtml = useMemo(
-    () => renderTemplate(selectedTemplate.htmlTemplate, state.fieldValues, selectedTemplate.fields),
-    [selectedTemplate.fields, selectedTemplate.htmlTemplate, state.fieldValues]
+    () => renderTemplate(selectedTemplate.htmlTemplate, resolvedFieldValues, selectedTemplate.fields),
+    [resolvedFieldValues, selectedTemplate.fields, selectedTemplate.htmlTemplate]
+  );
+  const previewDocumentHtml = useMemo(
+    () => buildPreviewDocument(renderedHtml, selectedTemplate.css, selectedPreset.width, selectedPreset.height),
+    [renderedHtml, selectedPreset.height, selectedPreset.width, selectedTemplate.css]
   );
 
   const handleExportPng = useCallback(async () => {
     try {
       await exportPng(
-        renderedHtml,
-        selectedTemplate.css,
+        previewDocumentHtml,
         selectedPreset.width,
         selectedPreset.height,
-        generateFilename(selectedPreset, selectedTemplate)
+        generateFilename(selectedPreset, selectedTemplate),
+        previewFrameRef.current
       );
     } catch (exportError) {
       showError(
@@ -66,11 +76,11 @@ export function AppShell() {
         }`
       );
     }
-  }, [renderedHtml, selectedPreset, selectedTemplate, showError]);
+  }, [previewDocumentHtml, selectedPreset, selectedTemplate, showError]);
 
-  const handleExportPdf = useCallback(() => {
+  const handleExportPdf = useCallback(async () => {
     try {
-      exportPdf(renderedHtml, selectedTemplate.css, selectedPreset.width, selectedPreset.height);
+      await exportPdf(previewDocumentHtml, selectedPreset.width, selectedPreset.height);
     } catch (exportError) {
       showError(
         `PDF-Export fehlgeschlagen: ${
@@ -78,7 +88,7 @@ export function AppShell() {
         }`
       );
     }
-  }, [renderedHtml, selectedPreset.height, selectedPreset.width, selectedTemplate.css, showError]);
+  }, [previewDocumentHtml, selectedPreset.height, selectedPreset.width, showError]);
 
   const handleTabAction = useCallback(() => {
     setActiveTab(state.activeTab === 'preview' ? 'content' : 'preview');
@@ -173,14 +183,14 @@ export function AppShell() {
 
         {state.activeTab === 'preview' && (
           <PreviewPanel
-            htmlContent={renderedHtml}
-            cssContent={selectedTemplate.css}
+            documentHtml={previewDocumentHtml}
             preset={selectedPreset}
             backgroundMode={state.backgroundMode}
             zoomLevel={state.zoomLevel}
             onBackgroundChange={setBackgroundMode}
             onZoomChange={setZoomLevel}
             onScaleChange={setPreviewScale}
+            frameRef={previewFrameRef}
           />
         )}
 

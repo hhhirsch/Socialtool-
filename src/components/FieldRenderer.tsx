@@ -1,14 +1,19 @@
-import type { TemplateField } from '../types';
+import type { FieldValues, TemplateField } from '../types';
 import styles from './FieldRenderer.module.css';
 
 interface Props {
   field: TemplateField;
   value: string;
+  values: FieldValues;
   onChange: (fieldId: string, value: string) => void;
 }
 
-export function FieldRenderer({ field, value, onChange }: Props) {
+export function FieldRenderer({ field, value, values, onChange }: Props) {
   const remainingCharacters = field.maxLength ? `${value.length}/${field.maxLength}` : null;
+  const resolvedOptions =
+    field.dependsOn && field.optionGroups
+      ? field.optionGroups[values[field.dependsOn]] ?? field.options ?? []
+      : field.options ?? [];
   const commonProps = {
     id: field.id,
     name: field.id,
@@ -31,7 +36,7 @@ export function FieldRenderer({ field, value, onChange }: Props) {
         <textarea {...commonProps} rows={field.multiline ? 5 : 3} className={styles.textarea} />
       ) : field.type === 'select' ? (
         <select {...commonProps} className={styles.input}>
-          {(field.options ?? []).map((option) => (
+          {resolvedOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
@@ -40,8 +45,8 @@ export function FieldRenderer({ field, value, onChange }: Props) {
       ) : (
         <input
           {...commonProps}
-          type={field.type === 'number' ? 'number' : 'text'}
-          inputMode={field.type === 'number' ? 'numeric' : 'text'}
+          type={field.type === 'number' ? 'number' : field.type === 'date' ? 'date' : 'text'}
+          inputMode={field.type === 'number' ? 'numeric' : field.type === 'date' ? 'numeric' : 'text'}
           className={styles.input}
         />
       )}

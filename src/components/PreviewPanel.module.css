@@ -9,6 +9,7 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 .title {
@@ -34,6 +35,8 @@
 .controlRow {
   display: grid;
   gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  align-items: start;
 }
 
 .controlBlock {
@@ -42,7 +45,7 @@
 }
 
 .previewArea {
-  min-height: 52vh;
+  min-height: clamp(320px, 52vh, 720px);
   border-radius: 28px;
   padding: 16px;
   overflow: auto;
@@ -71,4 +74,18 @@
   background-size: 20px 20px;
   background-position: 0 0, 0 10px, 10px -10px, -10px 0;
   background-color: #f8fafc;
+}
+
+@media (max-width: 640px) {
+  .panel {
+    gap: 14px;
+  }
+
+  .previewArea {
+    padding: 12px;
+  }
+
+  .scaleBadge {
+    padding: 6px 10px;
+  }
 }
