@@ -13,6 +13,10 @@
   --gb-text-muted:   rgba(203,213,225,0.45);
   --gb-border-sub:   rgba(255,255,255,0.05);
   --gb-border-gold:  rgba(232,184,75,0.12);
+  --gb-safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+  --gb-content-bottom-padding: 32px;
+  /* 104px = compact mobile action area reserve plus extra reach buffer above Safari chrome. */
+  --gb-bottom-action-bar-clearance: calc(104px + var(--gb-safe-area-inset-bottom));
 }
 
 /* Global reset and base styles */
@@ -26,6 +30,7 @@ html {
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  height: 100%;
 }
 
 body {
@@ -33,11 +38,22 @@ body {
   background: var(--gb-bg);
   color: var(--gb-text);
   overflow: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 #root {
-  height: 100dvh;
   height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+@media (min-width: 720px) {
+  :root {
+    /* 72px = shorter tablet/desktop reserve once the action area no longer stacks as tightly. */
+    --gb-bottom-action-bar-clearance: calc(72px + var(--gb-safe-area-inset-bottom));
+  }
 }
 
 /* Scrollbars */
