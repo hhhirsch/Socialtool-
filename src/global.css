@@ -13,6 +13,8 @@
   --gb-text-muted:   rgba(203,213,225,0.45);
   --gb-border-sub:   rgba(255,255,255,0.05);
   --gb-border-gold:  rgba(232,184,75,0.12);
+  --gb-safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --gb-bottom-action-bar-clearance: calc(188px + var(--gb-safe-area-bottom));
 }
 
 /* Global reset and base styles */
@@ -26,6 +28,7 @@ html {
   -webkit-text-size-adjust: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  height: 100%;
 }
 
 body {
@@ -33,11 +36,21 @@ body {
   background: var(--gb-bg);
   color: var(--gb-text);
   overflow: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 #root {
-  height: 100dvh;
   height: 100vh;
+  height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+@media (min-width: 720px) {
+  :root {
+    --gb-bottom-action-bar-clearance: calc(96px + var(--gb-safe-area-bottom));
+  }
 }
 
 /* Scrollbars */
