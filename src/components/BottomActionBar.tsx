@@ -7,6 +7,7 @@ interface Props {
   onTabAction: () => void;
   onExportPng: () => void;
   onExportPdf: () => void;
+  onCopyHtml?: () => Promise<void>;
   onReset: () => void;
 }
 
@@ -15,6 +16,7 @@ export function BottomActionBar({
   onTabAction,
   onExportPng,
   onExportPdf,
+  onCopyHtml,
   onReset,
 }: Props) {
   const tabLabel = activeTab === 'preview' ? 'Inhalt' : 'Vorschau';
@@ -24,7 +26,7 @@ export function BottomActionBar({
       <button type="button" className={styles.ghost} onClick={onTabAction}>
         {tabLabel}
       </button>
-      <ExportButtons compact onExportPng={onExportPng} onExportPdf={onExportPdf} />
+      <ExportButtons compact onExportPng={onExportPng} onExportPdf={onExportPdf} onCopyHtml={onCopyHtml} />
       <button type="button" className={styles.ghost} onClick={onReset}>
         Reset
       </button>

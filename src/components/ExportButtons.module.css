@@ -16,6 +16,16 @@
   font-weight: 800;
 }
 
+.outline {
+  border-radius: 16px;
+  padding: 12px 14px;
+  font: inherit;
+  font-weight: 800;
+  background: transparent;
+  border: 2px solid #0f172a;
+  color: #0f172a;
+}
+
 .primary {
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
   color: white;

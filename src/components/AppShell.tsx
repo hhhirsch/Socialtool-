@@ -3,6 +3,7 @@ import { useAppState } from '../hooks/useAppState';
 import { exportPdf } from '../utils/exportPdf';
 import { exportPng } from '../utils/exportPng';
 import { generateFilename } from '../utils/generateFilename';
+import { copySlideHtml } from '../utils/generateSlideHtml';
 import { buildPreviewDocument } from '../utils/previewDocument';
 import { getPresetById } from '../utils/presets';
 import { renderTemplate } from '../utils/renderTemplate';
@@ -25,6 +26,7 @@ export function AppShell() {
     state,
     toast,
     error,
+    showToast,
     showError,
     dismissError,
     setActiveTab,
@@ -89,6 +91,15 @@ export function AppShell() {
       );
     }
   }, [previewDocumentHtml, selectedPreset.height, selectedPreset.width, showError]);
+
+  const handleCopyHtml = useCallback(async () => {
+    try {
+      await copySlideHtml(selectedTemplate, resolvedFieldValues, selectedPreset.width, selectedPreset.height);
+      showToast('HTML in die Zwischenablage kopiert.');
+    } catch {
+      showError('HTML konnte nicht in die Zwischenablage kopiert werden.');
+    }
+  }, [selectedTemplate, resolvedFieldValues, selectedPreset.width, selectedPreset.height, showToast, showError]);
 
   const handleTabAction = useCallback(() => {
     setActiveTab(state.activeTab === 'preview' ? 'content' : 'preview');
@@ -252,6 +263,7 @@ export function AppShell() {
         onTabAction={handleTabAction}
         onExportPng={handleExportPng}
         onExportPdf={handleExportPdf}
+        onCopyHtml={handleCopyHtml}
         onReset={resetFieldValues}
       />
 
