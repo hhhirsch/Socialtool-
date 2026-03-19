@@ -32,11 +32,16 @@ export async function waitForPreviewReady(document: Document): Promise<void> {
 
 export function getExportRoot(document: Document): HTMLElement {
   const exportRoot = document.querySelector(EXPORT_ROOT_SELECTOR);
-  if (!(exportRoot instanceof HTMLElement)) {
+  const elementConstructor = document.defaultView?.HTMLElement;
+  const isHtmlElement = elementConstructor
+    ? exportRoot instanceof elementConstructor
+    : exportRoot?.nodeType === Node.ELEMENT_NODE;
+
+  if (!isHtmlElement) {
     throw new Error('Grafikinhalt für den Export wurde nicht gefunden.');
   }
 
-  return exportRoot;
+  return exportRoot as HTMLElement;
 }
 
 export async function waitForIframeDocument(

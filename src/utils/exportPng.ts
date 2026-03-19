@@ -16,20 +16,26 @@ export async function exportPng(
   mountNode.style.inset = '0 auto auto -99999px';
   mountNode.style.width = `${width}px`;
   mountNode.style.height = `${height}px`;
+  document.body.appendChild(mountNode);
 
-  const iframe = liveFrame ?? document.createElement('iframe');
-
-  if (!liveFrame) {
-    iframe.setAttribute('sandbox', 'allow-same-origin');
-    iframe.style.width = `${width}px`;
-    iframe.style.height = `${height}px`;
-    iframe.style.border = '0';
-    document.body.appendChild(mountNode);
-    mountNode.appendChild(iframe);
-  }
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('sandbox', 'allow-same-origin');
+  iframe.style.width = `${width}px`;
+  iframe.style.height = `${height}px`;
+  iframe.style.border = '0';
+  mountNode.appendChild(iframe);
 
   try {
-    const exportDocument = await waitForIframeDocument(iframe, liveFrame ? undefined : documentHtml);
+    let exportDocumentHtml = documentHtml;
+
+    if (liveFrame) {
+      const liveDocument = await waitForIframeDocument(liveFrame);
+      await waitForPreviewReady(liveDocument);
+      getExportRoot(liveDocument);
+      exportDocumentHtml = liveFrame.srcdoc || documentHtml;
+    }
+
+    const exportDocument = await waitForIframeDocument(iframe, exportDocumentHtml);
 
     await waitForPreviewReady(exportDocument);
 
@@ -40,6 +46,7 @@ export async function exportPng(
       scale: 1,
       backgroundColor: null,
       allowTaint: false,
+      foreignObjectRendering: true,
       useCORS: true,
       logging: false,
       windowWidth: width,
@@ -63,9 +70,9 @@ export async function exportPng(
     link.download = `${filename}.png`;
     link.click();
     URL.revokeObjectURL(downloadUrl);
+  } catch (error) {
+    throw error instanceof Error ? error : new Error(String(error));
   } finally {
-    if (!liveFrame) {
-      mountNode.remove();
-    }
+    mountNode.remove();
   }
 }
