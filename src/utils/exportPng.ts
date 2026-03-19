@@ -1,71 +1,39 @@
 import html2canvas from 'html2canvas';
-import { buildPreviewDocument } from './previewDocument';
-
-async function waitForAssets(document: Document): Promise<void> {
-  const fontReady = 'fonts' in document ? (document.fonts.ready.catch(() => undefined) as Promise<unknown>) : Promise.resolve();
-  const images = Array.from(document.images);
-
-  await Promise.all([
-    fontReady,
-    ...images.map(
-      (image) =>
-        image.complete
-          ? Promise.resolve()
-          : new Promise<void>((resolve) => {
-              image.addEventListener('load', () => resolve(), { once: true });
-              image.addEventListener('error', () => resolve(), { once: true });
-            })
-    ),
-  ]);
-
-  await new Promise<void>((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-  });
-}
+import { getExportRoot, waitForIframeDocument, waitForPreviewReady } from './previewExport';
 
 /**
  * Exports the isolated graphic in its original preset resolution.
  */
 export async function exportPng(
-  html: string,
-  css: string,
+  documentHtml: string,
   width: number,
   height: number,
-  filename: string
+  filename: string,
+  liveFrame?: HTMLIFrameElement | null
 ): Promise<void> {
   const mountNode = document.createElement('div');
   mountNode.style.position = 'fixed';
   mountNode.style.inset = '0 auto auto -99999px';
   mountNode.style.width = `${width}px`;
   mountNode.style.height = `${height}px`;
-  document.body.appendChild(mountNode);
 
-  const iframe = document.createElement('iframe');
-  iframe.setAttribute('sandbox', 'allow-same-origin');
-  iframe.style.width = `${width}px`;
-  iframe.style.height = `${height}px`;
-  iframe.style.border = '0';
-  mountNode.appendChild(iframe);
+  const iframe = liveFrame ?? document.createElement('iframe');
+
+  if (!liveFrame) {
+    iframe.setAttribute('sandbox', 'allow-same-origin');
+    iframe.style.width = `${width}px`;
+    iframe.style.height = `${height}px`;
+    iframe.style.border = '0';
+    document.body.appendChild(mountNode);
+    mountNode.appendChild(iframe);
+  }
 
   try {
-    await new Promise<void>((resolve, reject) => {
-      iframe.onload = () => resolve();
-      iframe.onerror = () => reject(new Error('Vorschau für PNG-Export konnte nicht geladen werden.'));
-      iframe.srcdoc = buildPreviewDocument(html, css, width, height);
-    });
+    const exportDocument = await waitForIframeDocument(iframe, liveFrame ? undefined : documentHtml);
 
-    const exportDocument = iframe.contentDocument;
-    if (!exportDocument) {
-      throw new Error('Exportdokument konnte nicht gelesen werden.');
-    }
+    await waitForPreviewReady(exportDocument);
 
-    await waitForAssets(exportDocument);
-
-    const graphicRoot = exportDocument.getElementById('graphic-root');
-    if (!(graphicRoot instanceof HTMLElement)) {
-      throw new Error('Grafikinhalt für den Export wurde nicht gefunden.');
-    }
-
+    const graphicRoot = getExportRoot(exportDocument);
     const canvas = await html2canvas(graphicRoot, {
       width,
       height,
@@ -96,6 +64,8 @@ export async function exportPng(
     link.click();
     URL.revokeObjectURL(downloadUrl);
   } finally {
-    mountNode.remove();
+    if (!liveFrame) {
+      mountNode.remove();
+    }
   }
 }

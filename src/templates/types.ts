@@ -5,7 +5,9 @@ export type PresetId =
   | "1584x396"
   | "1128x191";
 
-export type TemplateFieldType = "text" | "textarea" | "number" | "select";
+export type TemplateFieldType = "text" | "textarea" | "number" | "select" | "date";
+
+export type FieldValues = Record<string, string>;
 
 export interface TemplateFieldOption {
   label: string;
@@ -22,6 +24,8 @@ export interface TemplateField {
   maxLength?: number;
   helpText?: string;
   options?: TemplateFieldOption[];
+  dependsOn?: string;
+  optionGroups?: Record<string, TemplateFieldOption[]>;
 }
 
 export interface GraphicTemplate {
@@ -33,4 +37,5 @@ export interface GraphicTemplate {
   css: string;
   fields: TemplateField[];
   defaults: Record<string, string>;
+  resolveFieldValues?: (fieldValues: FieldValues) => FieldValues;
 }

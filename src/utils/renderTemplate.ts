@@ -1,4 +1,5 @@
 import type { FieldValues, TemplateField } from '../types';
+import { formatGermanDate } from './dateFormatting';
 
 function escapeHtml(value: string): string {
   return value
@@ -23,7 +24,8 @@ export function renderTemplate(
   return htmlTemplate.replace(/{{\s*([a-zA-Z0-9_-]+)\s*}}/g, (_, placeholder: string) => {
     const field = fieldMap.get(placeholder);
     const rawValue = fieldValues[placeholder] ?? field?.defaultValue ?? '';
-    const safeValue = escapeHtml(rawValue);
+    const displayValue = field?.type === 'date' ? formatGermanDate(rawValue) : rawValue;
+    const safeValue = escapeHtml(displayValue);
 
     if (field?.multiline || field?.type === 'textarea') {
       return safeValue.replace(/\n/g, '<br />');

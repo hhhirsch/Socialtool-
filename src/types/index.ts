@@ -10,7 +10,9 @@ export interface TemplateOption {
   value: string;
 }
 
-export type TemplateFieldType = 'text' | 'textarea' | 'select' | 'number';
+export type TemplateFieldType = 'text' | 'textarea' | 'select' | 'number' | 'date';
+
+export type FieldValues = Record<string, string>;
 
 export interface TemplateField {
   id: string;
@@ -22,6 +24,8 @@ export interface TemplateField {
   maxLength?: number;
   helpText?: string;
   options?: TemplateOption[];
+  dependsOn?: string;
+  optionGroups?: Record<string, TemplateOption[]>;
 }
 
 export interface GraphicTemplate {
@@ -33,12 +37,12 @@ export interface GraphicTemplate {
   css: string;
   fields: TemplateField[];
   defaults: Record<string, string>;
+  resolveFieldValues?: (fieldValues: FieldValues) => FieldValues;
 }
 
 export type TabId = 'content' | 'preview' | 'templates' | 'advanced';
 export type BackgroundMode = 'white' | 'gray' | 'transparent';
 export type ZoomLevel = 'fit' | '50' | '75' | '100';
-export type FieldValues = Record<string, string>;
 
 export interface AppState {
   selectedTemplateId: string;

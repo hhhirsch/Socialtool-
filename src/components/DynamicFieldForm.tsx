@@ -16,6 +16,7 @@ export function DynamicFieldForm({ fields, values, onChange }: Props) {
           key={field.id}
           field={field}
           value={values[field.id] ?? ''}
+          values={values}
           onChange={onChange}
         />
       ))}

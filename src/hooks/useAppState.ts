@@ -9,6 +9,7 @@ import {
   isValidTemplateId,
   mergeTemplateFieldValues,
   getTemplateDefaults,
+  normalizeTemplateFieldValues,
 } from '../utils/templateRegistry';
 
 function createInitialState(): { state: AppState; message: string | null } {
@@ -124,10 +125,13 @@ export function useAppState() {
   const updateFieldValue = useCallback((fieldId: string, value: string) => {
     setState((currentState) => ({
       ...currentState,
-      fieldValues: {
-        ...currentState.fieldValues,
-        [fieldId]: value,
-      },
+      fieldValues: normalizeTemplateFieldValues(
+        getTemplateById(currentState.selectedTemplateId),
+        {
+          ...currentState.fieldValues,
+          [fieldId]: value,
+        }
+      ),
     }));
   }, []);
 

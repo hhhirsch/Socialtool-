@@ -1,5 +1,7 @@
 import type { GraphicTemplate } from './types';
 import { sharedBaseCss } from './sharedBaseCss';
+import { INDICATION_AREAS, INDICATION_PRESETS_BY_AREA } from '../utils/indicationPresets';
+import { buildIndicationFields } from '../utils/templateContent';
 
 export const toWatchTemplate: GraphicTemplate = {
   id: "to-watch",
@@ -87,6 +89,7 @@ export const toWatchTemplate: GraphicTemplate = {
     .s1-indication {
       position: absolute;
       top: 452px; left: 72px; right: 72px; z-index: 5;
+      font-family: 'DM Sans', sans-serif;
       font-size: 26px; font-weight: 300;
       color: var(--text-mid); line-height: 1.4;
     }
@@ -101,14 +104,18 @@ export const toWatchTemplate: GraphicTemplate = {
     }
 
     .s1-zvt-label {
+      font-family: 'DM Sans', sans-serif;
       font-size: 10px; font-weight: 600;
       letter-spacing: 2.5px; text-transform: uppercase;
       color: rgba(52,211,153,0.5); margin-bottom: 10px;
+      font-variant-numeric: tabular-nums;
     }
 
     .s1-zvt-text {
+      font-family: 'DM Sans', sans-serif;
       font-size: 22px; font-weight: 300;
       color: rgba(203,213,225,0.75); line-height: 1.5;
+      font-variant-numeric: tabular-nums;
     }
 
     .s1-fristen {
@@ -118,13 +125,17 @@ export const toWatchTemplate: GraphicTemplate = {
     }
 
     .s1-frist-label {
+      font-family: 'DM Sans', sans-serif;
       font-size: 10px; letter-spacing: 2px;
       text-transform: uppercase; color: rgba(52,211,153,0.5);
       margin-bottom: 6px;
+      font-variant-numeric: tabular-nums;
     }
 
     .s1-frist-value {
+      font-family: 'DM Sans', sans-serif;
       font-size: 22px; font-weight: 500; color: var(--text);
+      font-variant-numeric: tabular-nums;
     }
   `,
   fields: [
@@ -132,14 +143,28 @@ export const toWatchTemplate: GraphicTemplate = {
     { id: "badgeText", label: "Badge", type: "text" },
     { id: "eyebrow", label: "Eyebrow", type: "text" },
     { id: "drugName", label: "Wirkstoff", type: "text" },
-    { id: "indicationTitle", label: "Indikation Titel", type: "text" },
-    { id: "indicationLine", label: "Indikationszeile", type: "textarea", multiline: true },
+    { id: "indicationArea", label: "Indikationsbereich", type: "select", options: INDICATION_AREAS },
+    {
+      id: "indicationPreset",
+      label: "Standardindikation",
+      type: "select",
+      options: INDICATION_PRESETS_BY_AREA[INDICATION_AREAS[0].value],
+      dependsOn: "indicationArea",
+      optionGroups: INDICATION_PRESETS_BY_AREA,
+    },
+    {
+      id: "indicationCustom",
+      label: "Freie Indikation",
+      type: "text",
+      placeholder: "Optional, überschreibt die Standardindikation",
+      helpText: "Nur nutzen, wenn die gewünschte G-BA-Formulierung nicht als Preset vorhanden ist.",
+    },
     { id: "zvtLabel", label: "ZVT Label", type: "text" },
     { id: "zvtText", label: "ZVT Text", type: "textarea", multiline: true },
     { id: "date1Label", label: "Datum 1 Label", type: "text" },
-    { id: "date1Value", label: "Datum 1", type: "text" },
+    { id: "date1Value", label: "Datum 1", type: "date" },
     { id: "date2Label", label: "Datum 2 Label", type: "text" },
-    { id: "date2Value", label: "Datum 2", type: "text" },
+    { id: "date2Value", label: "Datum 2", type: "date" },
     { id: "publisher", label: "Publisher", type: "text" },
     { id: "brand", label: "Brand", type: "text" }
   ],
@@ -148,15 +173,20 @@ export const toWatchTemplate: GraphicTemplate = {
     badgeText: "To watch",
     eyebrow: "To watch:",
     drugName: "Wirkstoff",
-    indicationTitle: "- Indikation",
-    indicationLine: "Therapiegebiet · Setting · Population",
+    indicationArea: "Onkologie",
+    indicationPreset: "NSCLC",
+    indicationCustom: "",
     zvtLabel: "Zweckmäßige Vergleichstherapie",
     zvtText: "Option A; Option B; ggf. Option C (populationsabhängig)",
     date1Label: "IQWiG vsl.",
-    date1Value: "TT.MM.JJJJ",
+    date1Value: "2026-04-30",
     date2Label: "Stellungnahme bis",
-    date2Value: "TT.MM.JJJJ",
+    date2Value: "2026-05-22",
     publisher: "Hans Hirsch · co.faktor",
     brand: "G-BA <em>Digest</em>"
-  }
+  },
+  resolveFieldValues: (fieldValues) => ({
+    ...fieldValues,
+    ...buildIndicationFields(fieldValues),
+  }),
 };

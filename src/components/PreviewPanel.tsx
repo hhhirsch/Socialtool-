@@ -1,20 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import type { RefObject } from 'react';
 import type { BackgroundMode, Preset, ZoomLevel } from '../types';
-import { buildPreviewDocument } from '../utils/previewDocument';
 import { BackgroundToggle } from './BackgroundToggle';
 import { ZoomControls } from './ZoomControls';
 import { PreviewFrame } from './PreviewFrame';
 import styles from './PreviewPanel.module.css';
 
 interface Props {
-  htmlContent: string;
-  cssContent: string;
+  documentHtml: string;
   preset: Preset;
   backgroundMode: BackgroundMode;
   zoomLevel: ZoomLevel;
   onBackgroundChange: (mode: BackgroundMode) => void;
   onZoomChange: (zoomLevel: ZoomLevel) => void;
   onScaleChange: (scale: number) => void;
+  frameRef?: RefObject<HTMLIFrameElement | null>;
+  onFrameLoad?: () => void;
 }
 
 function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
@@ -43,14 +44,15 @@ function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
 }
 
 export function PreviewPanel({
-  htmlContent,
-  cssContent,
+  documentHtml,
   preset,
   backgroundMode,
   zoomLevel,
   onBackgroundChange,
   onZoomChange,
   onScaleChange,
+  frameRef,
+  onFrameLoad,
 }: Props) {
   const frameAreaRef = useRef<HTMLDivElement>(null);
   const size = useContainerSize(frameAreaRef);
@@ -71,11 +73,6 @@ export function PreviewPanel({
   useEffect(() => {
     onScaleChange(scale);
   }, [onScaleChange, scale]);
-
-  const documentHtml = useMemo(
-    () => buildPreviewDocument(htmlContent, cssContent, preset.width, preset.height),
-    [cssContent, htmlContent, preset.height, preset.width]
-  );
 
   const backgroundClass =
     backgroundMode === 'gray'
@@ -117,6 +114,8 @@ export function PreviewPanel({
             width={preset.width}
             height={preset.height}
             scale={scale}
+            frameRef={frameRef}
+            onLoad={onFrameLoad}
           />
         </div>
       </div>

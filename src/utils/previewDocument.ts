@@ -47,7 +47,7 @@ export function buildPreviewDocument(
     </style>
   </head>
   <body>
-    <div id="graphic-root">${safeHtml}</div>
+    <div id="graphic-root" data-export-root="true">${safeHtml}</div>
   </body>
 </html>`;
 }

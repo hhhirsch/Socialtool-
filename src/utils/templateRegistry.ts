@@ -3,6 +3,14 @@ import { DEFAULT_TEMPLATE_ID, GRAPHIC_TEMPLATES } from '../templates';
 import type { FieldValues, GraphicTemplate, Preset, TemplateField } from '../types';
 import { getPresetById } from './presets';
 
+function getFieldOptions(field: TemplateField, values: FieldValues) {
+  if (field.dependsOn && field.optionGroups) {
+    return field.optionGroups[values[field.dependsOn]] ?? field.options ?? [];
+  }
+
+  return field.options ?? [];
+}
+
 export function getTemplates(): GraphicTemplate[] {
   return GRAPHIC_TEMPLATES;
 }
@@ -35,7 +43,7 @@ export function mergeTemplateFieldValues(
     }
   }
 
-  return defaults;
+  return normalizeTemplateFieldValues(template, defaults);
 }
 
 export function ensureCompatiblePresetId(template: GraphicTemplate, presetId: string): string {
@@ -48,6 +56,36 @@ export function ensureCompatiblePresetId(template: GraphicTemplate, presetId: st
 
 export function getTemplateField(template: GraphicTemplate, fieldId: string): TemplateField | undefined {
   return template.fields.find((field) => field.id === fieldId);
+}
+
+export function normalizeTemplateFieldValues(
+  template: GraphicTemplate,
+  values: FieldValues
+): FieldValues {
+  const normalizedValues = { ...values };
+
+  for (const field of template.fields) {
+    if (field.type !== 'select') {
+      continue;
+    }
+
+    const options = getFieldOptions(field, normalizedValues);
+    if (options.length === 0) {
+      normalizedValues[field.id] = '';
+      continue;
+    }
+
+    const selectedValue = normalizedValues[field.id];
+    if (options.some((option) => option.value === selectedValue)) {
+      continue;
+    }
+
+    const defaultValue = template.defaults[field.id] ?? field.defaultValue;
+    normalizedValues[field.id] =
+      options.find((option) => option.value === defaultValue)?.value ?? options[0].value;
+  }
+
+  return normalizedValues;
 }
 
 export function getSupportedPresets(template: GraphicTemplate, presets: Preset[]): Preset[] {
