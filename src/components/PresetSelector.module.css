@@ -5,32 +5,44 @@
 }
 
 .card {
-  border: 1px solid #dbe3ef;
+  border: 1px solid var(--gb-border-sub);
   border-radius: 18px;
-  background: white;
+  background: rgba(255,255,255,0.02);
   padding: 14px;
   display: grid;
   gap: 4px;
   text-align: left;
   font: inherit;
-  color: #0f172a;
+  color: var(--gb-text);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.card:hover:not(:disabled) {
+  background: rgba(255,255,255,0.04);
 }
 
 .cardActive {
-  border-color: #2563eb;
-  background: #eff6ff;
+  border-color: rgba(232,184,75,0.4);
+  background: var(--gb-gold-faint);
 }
 
 .card:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .label {
-  font-weight: 700;
+  font-weight: 600;
+  color: var(--gb-text);
+}
+
+.cardActive .label {
+  color: var(--gb-gold);
 }
 
 .meta,
 .hint {
   font-size: 0.82rem;
-  color: #64748b;
+  color: var(--gb-text-soft);
 }

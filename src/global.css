@@ -1,3 +1,20 @@
+/* Design tokens */
+:root {
+  --gb-bg:           #0f172a;
+  --gb-bg2:          #131f35;
+  --gb-gold:         #e8b84b;
+  --gb-gold-dim:     rgba(232,184,75,0.6);
+  --gb-gold-faint:   rgba(232,184,75,0.08);
+  --gb-gold-border:  rgba(232,184,75,0.2);
+  --gb-grid:         rgba(255,255,255,0.025);
+  --gb-text:         #e2e8f0;
+  --gb-text-mid:     rgba(203,213,225,0.65);
+  --gb-text-soft:    rgba(148,163,184,0.7);
+  --gb-text-muted:   rgba(203,213,225,0.45);
+  --gb-border-sub:   rgba(255,255,255,0.05);
+  --gb-border-gold:  rgba(232,184,75,0.12);
+}
+
 /* Global reset and base styles */
 *, *::before, *::after {
   margin: 0;
@@ -12,9 +29,9 @@ html {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-  background: #f5f5f8;
-  color: #333;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--gb-bg);
+  color: var(--gb-text);
   overflow: hidden;
 }
 
@@ -23,7 +40,7 @@ body {
   height: 100vh;
 }
 
-/* Hide scrollbars in some areas but keep functionality */
+/* Scrollbars */
 ::-webkit-scrollbar {
   width: 4px;
 }
@@ -33,10 +50,10 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #ccc;
+  background: rgba(232,184,75,0.25);
   border-radius: 2px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #aaa;
+  background: rgba(232,184,75,0.45);
 }

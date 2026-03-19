@@ -11,35 +11,39 @@
 }
 
 .label {
-  font-weight: 700;
-  color: #0f172a;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--gb-text);
 }
 
 .counter,
 .help {
   font-size: 0.82rem;
-  color: #64748b;
+  color: var(--gb-text-soft);
 }
 
 .input,
 .textarea {
   width: 100%;
-  border: 1px solid #cbd5e1;
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: 16px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   font: inherit;
-  color: #0f172a;
-  background: #f8fafc;
+  font-size: 0.92rem;
+  color: var(--gb-text);
+  background: rgba(255,255,255,0.04);
+  transition: border-color 0.15s;
 }
 
 .textarea {
   resize: vertical;
   min-height: 110px;
+  line-height: 1.5;
 }
 
 .input:focus,
 .textarea:focus {
-  outline: 2px solid rgba(37, 99, 235, 0.2);
-  border-color: #2563eb;
-  background: white;
+  outline: none;
+  border-color: rgba(232,184,75,0.4);
+  background: rgba(255,255,255,0.05);
 }
