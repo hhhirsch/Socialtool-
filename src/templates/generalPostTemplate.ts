@@ -62,6 +62,11 @@ export const generalPostTemplate: GraphicTemplate = {
     .s5-title {
       position: absolute;
       top: 200px; left: 72px; right: 72px; z-index: 5;
+      background: none;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 0;
       font-family: 'Instrument Serif', serif;
       font-size: 88px; line-height: 1.05;
       color: var(--text); letter-spacing: -2px;

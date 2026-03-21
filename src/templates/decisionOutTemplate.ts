@@ -60,6 +60,11 @@ export const decisionOutTemplate: GraphicTemplate = {
     .s2-drug {
       position: absolute;
       top: 128px; left: 72px; right: 72px; z-index: 5;
+      background: none;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 0;
       font-family: 'Instrument Serif', serif;
       font-size: 96px; line-height: 0.95;
       color: #fff; letter-spacing: -2px;
@@ -93,31 +98,35 @@ export const decisionOutTemplate: GraphicTemplate = {
     }
 
     .s2-outcome-row {
-      display: flex; align-items: flex-start; gap: 14px; margin-bottom: 12px;
+      display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px;
     }
 
     .s2-outcome-row:last-child { margin-bottom: 0; }
 
     .s2-pill {
       display: inline-block;
-      border-radius: 999px;
-      padding: 4px 10px;
+      border-radius: 4px;
+      padding: 3px 10px;
       white-space: nowrap;
       font-family: 'DM Sans', sans-serif;
       font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 1px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
       flex-shrink: 0;
-      margin-top: 2px;
+      margin-top: 3px;
+      line-height: 1.4;
     }
 
-    .s2-pill--primary  { background: rgba(232,184,75,0.16); color: var(--gold); }
-    .s2-pill--secondary  { background: rgba(148,163,184,0.16); color: rgba(226,232,240,0.88); }
+    .s2-pill--positive { background: rgba(52,211,153,0.18); color: #34d399; }
+    .s2-pill--caution { background: rgba(232,184,75,0.18); color: #e8b84b; }
+    .s2-pill--negative { background: rgba(239,68,68,0.14); color: #f87171; }
+    .s2-pill--orphan { background: rgba(139,92,246,0.15); color: #a78bfa; }
+    .s2-pill--neutral { background: rgba(148,163,184,0.15); color: #94a3b8; }
 
     .s2-outcome-text {
       font-family: 'DM Sans', sans-serif;
-      font-size: 20px; font-weight: 400; color: var(--text); line-height: 1.4;
+      font-size: 20px; font-weight: 400; color: var(--text); line-height: 1.45;
     }
 
     .s2-zvt {
@@ -207,9 +216,9 @@ export const decisionOutTemplate: GraphicTemplate = {
   resolveFieldValues: (fieldValues) => ({
     ...fieldValues,
     ...buildIndicationFields(fieldValues),
-    groupsHtml: buildOutcomeGroupsHtml(fieldValues, (group, index) => `
+    groupsHtml: buildOutcomeGroupsHtml(fieldValues, (group) => `
       <div class="s2-outcome-row">
-        <span class="${index === 0 ? 's2-pill s2-pill--primary' : 's2-pill s2-pill--secondary'}">${escapeTemplateHtml(group.tag)}</span>
+        <span class="s2-pill s2-pill--${group.pillTone}">${escapeTemplateHtml(group.tag)}</span>
         <span class="s2-outcome-text">${escapeTemplateHtml(group.text)}</span>
       </div>
     `),

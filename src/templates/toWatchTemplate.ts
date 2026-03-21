@@ -79,6 +79,11 @@ export const toWatchTemplate: GraphicTemplate = {
     .s1-drug {
       position: absolute;
       top: 164px; left: 72px; right: 72px; z-index: 5;
+      background: none;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 0;
       font-family: 'Instrument Serif', serif;
       font-size: 96px; line-height: 0.95;
       color: #fff; letter-spacing: -2px;

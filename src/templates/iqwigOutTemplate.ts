@@ -97,6 +97,11 @@ export const iqwigOutTemplate: GraphicTemplate = {
     .s3-drug {
       position: absolute;
       top: 128px; left: 72px; right: 72px; z-index: 5;
+      background: none;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 0;
       font-family: 'Instrument Serif', serif;
       font-size: 96px; line-height: 0.95;
       color: #fff; letter-spacing: -2px;
@@ -147,38 +152,42 @@ export const iqwigOutTemplate: GraphicTemplate = {
 
     .s3-assessment {
       display: grid;
-      gap: 10px;
+      gap: 16px;
     }
 
     .s3-assessment-row {
       display: flex;
       align-items: flex-start;
-      gap: 12px;
+      gap: 14px;
     }
 
     .s3-pill {
-      display: inline-flex;
-      align-items: center;
-      border-radius: 999px;
-      padding: 4px 10px;
-      background: rgba(96,165,250,0.14);
-      color: #93c5fd;
+      display: inline-block;
+      border-radius: 4px;
+      padding: 3px 10px;
       font-family: 'DM Sans', sans-serif;
       font-size: 10px;
       font-weight: 700;
-      letter-spacing: 1px;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
       white-space: nowrap;
-      margin-top: 2px;
+      flex-shrink: 0;
+      margin-top: 3px;
+      line-height: 1.4;
     }
 
-    .s3-pill--muted {
-      background: rgba(148,163,184,0.14);
-      color: rgba(226,232,240,0.85);
-    }
+    .s3-pill--positive { background: rgba(52,211,153,0.18); color: #34d399; }
+    .s3-pill--caution { background: rgba(232,184,75,0.18); color: #e8b84b; }
+    .s3-pill--negative { background: rgba(239,68,68,0.14); color: #f87171; }
+    .s3-pill--orphan { background: rgba(139,92,246,0.15); color: #a78bfa; }
+    .s3-pill--neutral { background: rgba(148,163,184,0.15); color: #94a3b8; }
 
     .s3-tl-value--muted {
-      font-size: 20px; color: rgba(203,213,225,0.7);
+      font-size: 20px; color: rgba(203,213,225,0.7); line-height: 1.45;
+    }
+
+    .s3-tl-value--assessment {
+      font-size: 20px; font-weight: 400; color: var(--text); line-height: 1.45;
     }
   `,
   fields: [
@@ -253,10 +262,10 @@ export const iqwigOutTemplate: GraphicTemplate = {
   resolveFieldValues: (fieldValues) => ({
     ...fieldValues,
     ...buildIndicationFields(fieldValues),
-    groupsHtml: buildOutcomeGroupsHtml(fieldValues, (group, index) => `
+    groupsHtml: buildOutcomeGroupsHtml(fieldValues, (group) => `
       <div class="s3-assessment-row">
-        <span class="${index === 0 ? 's3-pill' : 's3-pill s3-pill--muted'}">${escapeTemplateHtml(group.tag)}</span>
-        <div class="${index === 0 ? 's3-tl-value' : 's3-tl-value s3-tl-value--muted'}">${escapeTemplateHtml(group.text)}</div>
+        <span class="s3-pill s3-pill--${group.pillTone}">${escapeTemplateHtml(group.tag)}</span>
+        <div class="s3-tl-value s3-tl-value--assessment">${escapeTemplateHtml(group.text)}</div>
       </div>
     `),
   }),
