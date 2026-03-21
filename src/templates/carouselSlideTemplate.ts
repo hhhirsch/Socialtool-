@@ -75,6 +75,11 @@ export const carouselSlideTemplate: GraphicTemplate = {
     .s4-title {
       position: absolute;
       top: 210px; left: 72px; right: 72px; z-index: 5;
+      background: none;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      padding: 0;
       font-family: 'Instrument Serif', serif;
       font-size: 80px; line-height: 1.1;
       color: var(--text); letter-spacing: -1px;

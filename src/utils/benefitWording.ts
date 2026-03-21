@@ -2,6 +2,7 @@ import type { TemplateOption } from '../types';
 
 export type EvidenceLevel = 'Beleg' | 'Hinweis' | 'Anhaltspunkt';
 export type BenefitMode = 'standard' | 'orphan_belegt' | 'orphan_nicht_quantifizierbar';
+export type BenefitBadgeTone = 'positive' | 'caution' | 'negative' | 'orphan' | 'neutral';
 
 export const STANDARD_BENEFIT_MODE: BenefitMode = 'standard';
 export const ORPHAN_BELEGT_BENEFIT_MODE: BenefitMode = 'orphan_belegt';
@@ -114,6 +115,31 @@ export function getBenefitBadgeLabel(
       return 'Geringerer Nutzen';
     default:
       return 'Bewertung';
+  }
+}
+
+export function getBenefitBadgeTone(
+  benefitExtent: string,
+  benefitMode: string = STANDARD_BENEFIT_MODE
+): BenefitBadgeTone {
+  if (
+    benefitMode === ORPHAN_BELEGT_BENEFIT_MODE ||
+    benefitMode === ORPHAN_NICHT_QUANTIFIZIERBAR_BENEFIT_MODE
+  ) {
+    return 'orphan';
+  }
+
+  switch (benefitExtent) {
+    case 'erheblicher Zusatznutzen':
+    case 'beträchtlicher Zusatznutzen':
+      return 'positive';
+    case 'geringer Zusatznutzen':
+      return 'caution';
+    case 'kein Zusatznutzen belegt':
+    case 'geringerer Nutzen':
+      return 'negative';
+    default:
+      return 'neutral';
   }
 }
 

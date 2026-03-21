@@ -1,7 +1,9 @@
 import type { FieldValues } from '../types';
 import {
+  type BenefitBadgeTone,
   buildOutcomeStatement,
   getBenefitBadgeLabel,
+  getBenefitBadgeTone,
   STANDARD_BENEFIT_MODE,
 } from './benefitWording';
 import { resolveIndication } from './indicationPresets';
@@ -12,6 +14,7 @@ export interface OutcomeGroupContent {
   description: string;
   evidenceLevel: string;
   population: string;
+  pillTone: BenefitBadgeTone;
   tag: string;
   text: string;
 }
@@ -61,6 +64,7 @@ export function getOutcomeGroups(fieldValues: FieldValues, groupId = 'groups'): 
       benefitExtent,
       benefitMode,
       description,
+      pillTone: getBenefitBadgeTone(benefitExtent, benefitMode),
       tag: getBenefitBadgeLabel(benefitExtent, benefitMode),
       text: buildOutcomeStatement(
         population,
