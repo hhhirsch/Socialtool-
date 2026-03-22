@@ -148,11 +148,15 @@ export const generalPostTemplate: GraphicTemplate = {
     .preset-1200x627 .s5-panel {
       width: 290px;
     }
-
+    
     .preset-1200x627 .s5-quote {
-      right: 28px;
-      width: 210px;
+      right: 26px;
+      width: 190px;
       top: 52%;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     .preset-1200x627 .s5-quote-mark {
