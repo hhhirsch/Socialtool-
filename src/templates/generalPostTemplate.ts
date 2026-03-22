@@ -181,19 +181,19 @@ export const generalPostTemplate: GraphicTemplate = {
       text-align: center;
     }
 
-   .preset-1200x627 .bottom {
-     left: 48px;
-     right: 48px;
-     bottom: 36px;
-   }
+    .preset-1200x627 .bottom {
+      left: 48px;
+      right: 48px;
+      bottom: 36px;
+    }
 
-   .preset-1200x627 .publisher {
-     font-size: 11px;
-   }
+    .preset-1200x627 .publisher {
+      font-size: 11px;
+    }
 
-   .preset-1200x627 .brand {
-     font-size: 16px;
-   }
+    .preset-1200x627 .brand {
+      font-size: 16px;
+    }
   `,
   fields: [
     { id: "tagText", label: "Tag", type: "text" },
