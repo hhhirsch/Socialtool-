@@ -65,46 +65,13 @@ export async function exportPng(
       }, 'image/png');
     });
 
-    const file = new File([blob], `${filename}.png`, { type: 'image/png' });
-    const shareData = { files: [file], title: filename };
+    const blobUrl = URL.createObjectURL(blob);
+    window.setTimeout(() => URL.revokeObjectURL(blobUrl), BLOB_URL_REVOCATION_DELAY_MS);
 
-    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-      const canShareFiles =
-        typeof navigator.canShare !== 'function' || navigator.canShare(shareData);
-
-      if (canShareFiles) {
-        try {
-          await navigator.share(shareData);
-          return;
-        } catch (error) {
-          if (error instanceof DOMException && error.name === 'AbortError') {
-            return;
-          }
-
-          console.warn('PNG file could not be shared, using fallback.', error);
-        }
-      }
+    const newTab = window.open(blobUrl, '_blank');
+    if (!newTab) {
+      throw new Error(`PNG "${filename}.png" konnte nicht in neuem Tab geöffnet werden.`);
     }
-
-    const downloadUrl = URL.createObjectURL(blob);
-    const scheduleUrlRevocation = () => {
-      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), BLOB_URL_REVOCATION_DELAY_MS);
-    };
-    const newTab = window.open(downloadUrl, '_blank', 'noopener,noreferrer');
-
-    if (newTab) {
-      scheduleUrlRevocation();
-      return;
-    }
-
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = `${filename}.png`;
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    scheduleUrlRevocation();
   } catch (error) {
     throw error instanceof Error ? error : new Error(String(error));
   } finally {
