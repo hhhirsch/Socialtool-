@@ -112,12 +112,12 @@ export const generalPostTemplate: GraphicTemplate = {
       color: rgba(232,184,75,0.75);
       letter-spacing: -0.5px;
     }
-
+    
     .preset-1200x627 .s5-topic {
-      top: 76px;
+      top: 92px;
       left: 48px;
     }
-
+    
     .preset-1200x627 .s5-title {
       top: 130px;
       left: 48px;
