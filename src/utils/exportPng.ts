@@ -63,7 +63,36 @@ export async function exportPng(
       }, 'image/png');
     });
 
+    const file = new File([blob], `${filename}.png`, { type: 'image/png' });
+    const shareData = { files: [file], title: filename };
+
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      const canShareFiles =
+        typeof navigator.canShare !== 'function' || navigator.canShare(shareData);
+
+      if (canShareFiles) {
+        try {
+          await navigator.share(shareData);
+          return;
+        } catch (error) {
+          if (error instanceof DOMException && error.name === 'AbortError') {
+            return;
+          }
+        }
+      }
+    }
+
     const downloadUrl = URL.createObjectURL(blob);
+    const revokeDownloadUrl = () => {
+      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 60_000);
+    };
+    const newTab = window.open(downloadUrl, '_blank', 'noopener,noreferrer');
+
+    if (newTab) {
+      revokeDownloadUrl();
+      return;
+    }
+
     const link = document.createElement('a');
     link.href = downloadUrl;
     link.download = `${filename}.png`;
@@ -71,7 +100,7 @@ export async function exportPng(
     document.body.appendChild(link);
     link.click();
     link.remove();
-    URL.revokeObjectURL(downloadUrl);
+    revokeDownloadUrl();
   } catch (error) {
     throw error instanceof Error ? error : new Error(String(error));
   } finally {
