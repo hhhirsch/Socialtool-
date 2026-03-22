@@ -7,7 +7,7 @@ export const generalPostTemplate: GraphicTemplate = {
   description: "Meinungs- oder Einordnungsformat mit Titel, Body und Pull-Quote.",
   supportedPresetIds: ["1080x1080", "1080x1350", "1200x627"],
   htmlTemplate: `
-    <div class="slide">
+    <div class="slide preset-{{presetId}}">
       <div class="grid"></div>
       <div class="glow glow--tl"></div>
       <div class="accent-stripe"></div>
@@ -111,6 +111,73 @@ export const generalPostTemplate: GraphicTemplate = {
       font-size: 32px; line-height: 1.45;
       color: rgba(232,184,75,0.75);
       letter-spacing: -0.5px;
+    }
+
+    .preset-1200x627 .s5-topic {
+      top: 76px;
+      left: 48px;
+    }
+
+    .preset-1200x627 .s5-title {
+      top: 130px;
+      left: 48px;
+      right: 320px;
+      font-size: 58px;
+      line-height: 1.02;
+      letter-spacing: -1.2px;
+    }
+
+    .preset-1200x627 .s5-rule {
+      top: 360px;
+      left: 48px;
+    }
+
+    .preset-1200x627 .s5-body {
+      top: 385px;
+      left: 48px;
+      right: 320px;
+      font-size: 18px;
+      line-height: 1.45;
+      max-width: 540px;
+    }
+
+    .preset-1200x627 .s5-body:empty {
+      display: none;
+    }
+
+    .preset-1200x627 .s5-panel {
+      width: 290px;
+    }
+
+    .preset-1200x627 .s5-quote {
+      right: 28px;
+      width: 210px;
+      top: 52%;
+    }
+
+    .preset-1200x627 .s5-quote-mark {
+      font-size: 70px;
+      margin-bottom: 8px;
+    }
+
+    .preset-1200x627 .s5-quote-text {
+      font-size: 16px;
+      line-height: 1.4;
+      letter-spacing: -0.2px;
+    }
+
+    .preset-1200x627 .bottom {
+      left: 48px;
+      right: 48px;
+      bottom: 36px;
+    }
+
+    .preset-1200x627 .publisher {
+      font-size: 11px;
+    }
+
+    .preset-1200x627 .brand {
+      font-size: 16px;
     }
   `,
   fields: [
