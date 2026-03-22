@@ -114,33 +114,39 @@ export const generalPostTemplate: GraphicTemplate = {
     }
     
     .preset-1200x627 .s5-topic {
-      top: 92px;
+      top: 104px;
       left: 50%;
-      transform: translateX(calc(-50% - 130px));
+      transform: translateX(-340px);
     }
-    
+
     .preset-1200x627 .s5-title {
-      top: 130px;
+      top: 138px;
       left: 48px;
       right: 320px;
+      width: 100%;
+      max-width: 680px;
+      margin: 0 auto;
       font-size: 58px;
-      line-height: 1.02;
+      line-height: 1.04;
       letter-spacing: -1.2px;
-      text-align: center;
+      text-align: left;
     }
 
     .preset-1200x627 .s5-rule {
-      top: 360px;
-      left: 48px;
+      top: 372px;
+      left: 50%;
+      transform: translateX(-340px);
     }
 
     .preset-1200x627 .s5-body {
-      top: 385px;
+      top: 395px;
       left: 48px;
       right: 320px;
+      width: 100%;
+      max-width: 540px;
+      margin: 0 auto;
       font-size: 18px;
       line-height: 1.45;
-      max-width: 540px;
     }
 
     .preset-1200x627 .s5-body:empty {
@@ -150,7 +156,7 @@ export const generalPostTemplate: GraphicTemplate = {
     .preset-1200x627 .s5-panel {
       width: 290px;
     }
-    
+
     .preset-1200x627 .s5-quote {
       right: 26px;
       width: 190px;
@@ -170,21 +176,24 @@ export const generalPostTemplate: GraphicTemplate = {
       font-size: 16px;
       line-height: 1.4;
       letter-spacing: -0.2px;
+      max-width: 190px;
+      margin: 0 auto;
+      text-align: center;
     }
 
-    .preset-1200x627 .bottom {
-      left: 48px;
-      right: 48px;
-      bottom: 36px;
-    }
+   .preset-1200x627 .bottom {
+     left: 48px;
+     right: 48px;
+     bottom: 36px;
+   }
 
-    .preset-1200x627 .publisher {
-      font-size: 11px;
-    }
+   .preset-1200x627 .publisher {
+     font-size: 11px;
+   }
 
-    .preset-1200x627 .brand {
-      font-size: 16px;
-    }
+   .preset-1200x627 .brand {
+     font-size: 16px;
+   }
   `,
   fields: [
     { id: "tagText", label: "Tag", type: "text" },
