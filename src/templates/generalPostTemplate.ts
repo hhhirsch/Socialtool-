@@ -7,7 +7,7 @@ export const generalPostTemplate: GraphicTemplate = {
   description: "Meinungs- oder Einordnungsformat mit Titel, Body und Pull-Quote.",
   supportedPresetIds: ["1080x1080", "1080x1350", "1200x627"],
   htmlTemplate: `
-    <div class="slide preset-{{presetId}}">
+    <div class="slide">
       <div class="grid"></div>
       <div class="glow glow--tl"></div>
       <div class="accent-stripe"></div>
