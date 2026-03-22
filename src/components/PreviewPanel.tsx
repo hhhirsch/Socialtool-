@@ -82,12 +82,12 @@ export function PreviewPanel({
         : styles.white;
 
   const documentHtmlWithPresetClass = useMemo(() => {
-    const presetClass = `preset-${preset.id}`;
+    const presetClass = `preset-${preset.width}x${preset.height}`;
     return documentHtml.replace(
       /class="slide\b/,
       `class="slide ${presetClass}`
     );
-  }, [documentHtml, preset.id]);
+  }, [documentHtml, preset.height, preset.width]);
 
   return (
     <section className={styles.panel}>
