@@ -81,6 +81,14 @@ export function PreviewPanel({
         ? styles.transparent
         : styles.white;
 
+  const documentHtmlWithPresetClass = useMemo(() => {
+    const presetClass = `preset-${preset.id}`;
+    return documentHtml.replace(
+      /class="slide\b/,
+      `class="slide ${presetClass}`
+    );
+  }, [documentHtml, preset.id]);
+
   return (
     <section className={styles.panel}>
       <div className={styles.header}>
@@ -110,7 +118,7 @@ export function PreviewPanel({
           style={{ width: preset.width * scale, height: preset.height * scale }}
         >
           <PreviewFrame
-            documentHtml={documentHtml}
+            documentHtml={documentHtmlWithPresetClass}
             width={preset.width}
             height={preset.height}
             scale={scale}
