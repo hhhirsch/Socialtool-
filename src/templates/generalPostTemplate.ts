@@ -115,7 +115,8 @@ export const generalPostTemplate: GraphicTemplate = {
     
     .preset-1200x627 .s5-topic {
       top: 92px;
-      left: 48px;
+      left: 50%;
+      transform: translateX(calc(-50% - 130px));
     }
     
     .preset-1200x627 .s5-title {
@@ -125,6 +126,7 @@ export const generalPostTemplate: GraphicTemplate = {
       font-size: 58px;
       line-height: 1.02;
       letter-spacing: -1.2px;
+      text-align: center;
     }
 
     .preset-1200x627 .s5-rule {
