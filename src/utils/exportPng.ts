@@ -1,6 +1,8 @@
 import html2canvas from 'html2canvas';
 import { getExportRoot, waitForIframeDocument, waitForPreviewReady } from './previewExport';
 
+const BLOB_URL_REVOCATION_DELAY_MS = 10_000;
+
 /**
  * Exports the isolated graphic in its original preset resolution.
  */
@@ -63,7 +65,38 @@ export async function exportPng(
       }, 'image/png');
     });
 
+    const file = new File([blob], `${filename}.png`, { type: 'image/png' });
+    const shareData = { files: [file], title: filename };
+
+    if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+      const canShareFiles =
+        typeof navigator.canShare !== 'function' || navigator.canShare(shareData);
+
+      if (canShareFiles) {
+        try {
+          await navigator.share(shareData);
+          return;
+        } catch (error) {
+          if (error instanceof DOMException && error.name === 'AbortError') {
+            return;
+          }
+
+          console.warn('PNG file could not be shared, using fallback.', error);
+        }
+      }
+    }
+
     const downloadUrl = URL.createObjectURL(blob);
+    const scheduleUrlRevocation = () => {
+      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), BLOB_URL_REVOCATION_DELAY_MS);
+    };
+    const newTab = window.open(downloadUrl, '_blank', 'noopener,noreferrer');
+
+    if (newTab) {
+      scheduleUrlRevocation();
+      return;
+    }
+
     const link = document.createElement('a');
     link.href = downloadUrl;
     link.download = `${filename}.png`;
@@ -71,7 +104,7 @@ export async function exportPng(
     document.body.appendChild(link);
     link.click();
     link.remove();
-    URL.revokeObjectURL(downloadUrl);
+    scheduleUrlRevocation();
   } catch (error) {
     throw error instanceof Error ? error : new Error(String(error));
   } finally {
