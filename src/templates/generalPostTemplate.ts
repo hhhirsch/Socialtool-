@@ -113,21 +113,20 @@ export const generalPostTemplate: GraphicTemplate = {
       letter-spacing: -0.5px;
     }
     
-    /* 1200x627: unified left content block – all elements share the same left axis.
-       Available left area = 1200px – 290px panel = 910px.
-       Block width = 680px → left offset = (910 – 680) / 2 = 115px. */
+    /* 1200x627: fixed left axis at 96px for all left-aligned elements;
+       right quote panel stays separate at the right. */
     .preset-1200x627 .s5-topic {
       top: 104px;
-      left: 115px;
+      left: 96px;
       transform: none;
     }
 
     .preset-1200x627 .s5-title {
       top: 138px;
-      left: 115px;
-      right: auto;
-      width: 680px;
-      max-width: 680px;
+      left: 96px;
+      right: 320px;
+      width: auto;
+      max-width: 640px;
       margin: 0;
       font-size: 58px;
       line-height: 1.04;
@@ -137,19 +136,20 @@ export const generalPostTemplate: GraphicTemplate = {
 
     .preset-1200x627 .s5-rule {
       top: 372px;
-      left: 115px;
+      left: 96px;
       transform: none;
     }
 
     .preset-1200x627 .s5-body {
       top: 395px;
-      left: 115px;
-      right: auto;
-      width: 680px;
-      max-width: 680px;
+      left: 96px;
+      right: 320px;
+      width: auto;
+      max-width: 540px;
       margin: 0;
       font-size: 18px;
       line-height: 1.45;
+      text-align: left;
     }
 
     .preset-1200x627 .s5-body:empty {
@@ -185,7 +185,7 @@ export const generalPostTemplate: GraphicTemplate = {
     }
 
     .preset-1200x627 .bottom {
-      left: 48px;
+      left: 96px;
       right: 48px;
       bottom: 36px;
     }
