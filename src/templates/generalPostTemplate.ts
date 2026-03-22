@@ -113,39 +113,42 @@ export const generalPostTemplate: GraphicTemplate = {
       letter-spacing: -0.5px;
     }
     
-    /* 1200x627: fixed left axis at 96px for all left-aligned elements;
-       right quote panel stays separate at the right. */
+    .preset-1200x627 .tag {
+      top: 58px;
+      left: 96px;
+    }
+
     .preset-1200x627 .s5-topic {
-      top: 104px;
+      top: 98px;
       left: 96px;
       transform: none;
     }
 
     .preset-1200x627 .s5-title {
-      top: 138px;
+      top: 150px;
       left: 96px;
-      right: 320px;
-      width: auto;
-      max-width: 640px;
+      right: auto;
+      width: 620px;
+      max-width: none;
       margin: 0;
-      font-size: 58px;
-      line-height: 1.04;
-      letter-spacing: -1.2px;
+      font-size: 54px;
+      line-height: 1.03;
+      letter-spacing: -1.1px;
       text-align: left;
     }
 
     .preset-1200x627 .s5-rule {
-      top: 372px;
+      top: 360px;
       left: 96px;
       transform: none;
     }
 
     .preset-1200x627 .s5-body {
-      top: 395px;
+      top: 385px;
       left: 96px;
-      right: 320px;
-      width: auto;
-      max-width: 540px;
+      right: auto;
+      width: 520px;
+      max-width: none;
       margin: 0;
       font-size: 18px;
       line-height: 1.45;
@@ -157,13 +160,13 @@ export const generalPostTemplate: GraphicTemplate = {
     }
 
     .preset-1200x627 .s5-panel {
-      width: 290px;
+      width: 280px;
     }
 
     .preset-1200x627 .s5-quote {
-      right: 26px;
-      width: 190px;
-      top: 52%;
+      right: 24px;
+      width: 170px;
+      top: 51%;
       text-align: center;
       display: flex;
       flex-direction: column;
@@ -171,15 +174,15 @@ export const generalPostTemplate: GraphicTemplate = {
     }
 
     .preset-1200x627 .s5-quote-mark {
-      font-size: 70px;
-      margin-bottom: 8px;
+      font-size: 62px;
+      margin-bottom: 6px;
     }
 
     .preset-1200x627 .s5-quote-text {
-      font-size: 16px;
-      line-height: 1.4;
-      letter-spacing: -0.2px;
-      max-width: 190px;
+      font-size: 15px;
+      line-height: 1.38;
+      letter-spacing: -0.15px;
+      max-width: 170px;
       margin: 0 auto;
       text-align: center;
     }
@@ -187,7 +190,7 @@ export const generalPostTemplate: GraphicTemplate = {
     .preset-1200x627 .bottom {
       left: 96px;
       right: 48px;
-      bottom: 36px;
+      bottom: 34px;
     }
 
     .preset-1200x627 .publisher {
