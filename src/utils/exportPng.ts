@@ -1,6 +1,8 @@
 import html2canvas from 'html2canvas';
 import { getExportRoot, waitForIframeDocument, waitForPreviewReady } from './previewExport';
 
+const BLOB_URL_REVOCATION_DELAY_MS = 10_000;
+
 /**
  * Exports the isolated graphic in its original preset resolution.
  */
@@ -78,18 +80,20 @@ export async function exportPng(
           if (error instanceof DOMException && error.name === 'AbortError') {
             return;
           }
+
+          console.warn('PNG file could not be shared, using fallback.', error);
         }
       }
     }
 
     const downloadUrl = URL.createObjectURL(blob);
-    const revokeDownloadUrl = () => {
-      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 60_000);
+    const scheduleUrlRevocation = () => {
+      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), BLOB_URL_REVOCATION_DELAY_MS);
     };
     const newTab = window.open(downloadUrl, '_blank', 'noopener,noreferrer');
 
     if (newTab) {
-      revokeDownloadUrl();
+      scheduleUrlRevocation();
       return;
     }
 
@@ -100,7 +104,7 @@ export async function exportPng(
     document.body.appendChild(link);
     link.click();
     link.remove();
-    revokeDownloadUrl();
+    scheduleUrlRevocation();
   } catch (error) {
     throw error instanceof Error ? error : new Error(String(error));
   } finally {
