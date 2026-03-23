@@ -54,11 +54,17 @@ async function waitForDocumentFontsBestEffort(previewDocument: Document): Promis
   try {
     await Promise.race([
       previewDocument.fonts.ready,
-      new Promise((resolve) => window.setTimeout(resolve, FONT_READY_TIMEOUT_MS)),
+      new Promise((resolve) => setTimeout(resolve, FONT_READY_TIMEOUT_MS)),
     ]);
   } catch {
     // Best effort only.
   }
+}
+
+function waitForAnimationFrame(): Promise<void> {
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => resolve());
+  });
 }
 
 export function PreviewPanel({
@@ -105,10 +111,7 @@ export function PreviewPanel({
       }
 
       await waitForDocumentFontsBestEffort(previewDocument);
-
-      await new Promise<void>((resolve) => {
-        window.requestAnimationFrame(() => resolve());
-      });
+      await waitForAnimationFrame();
 
       if (!cancelled) {
         applyGeneralPostTitleFit(previewDocument);

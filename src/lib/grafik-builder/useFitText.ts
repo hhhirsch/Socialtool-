@@ -23,10 +23,14 @@ export function fitTextElement(
 ): number {
   let nextFontSize = maxFontSize;
   element.style.fontSize = `${nextFontSize}px`;
+  const availableHeight = element.clientHeight;
+
+  if (availableHeight <= 0) {
+    return nextFontSize;
+  }
 
   while (
-    element.clientHeight > 0 &&
-    element.scrollHeight > element.clientHeight &&
+    element.scrollHeight > availableHeight &&
     nextFontSize > minFontSize
   ) {
     nextFontSize = Math.max(nextFontSize - step, minFontSize);
@@ -42,7 +46,7 @@ function isHtmlElement(node: Element | null, ownerDocument: Document | null): no
   }
 
   const elementConstructor = ownerDocument?.defaultView?.HTMLElement;
-  return elementConstructor ? node instanceof elementConstructor : true;
+  return elementConstructor ? node instanceof elementConstructor : false;
 }
 
 export function applyGeneralPostTitleFit(root: ParentNode): number | null {
@@ -66,12 +70,12 @@ export function applyGeneralPostTitleFit(root: ParentNode): number | null {
 }
 
 /**
- * Reduziert die Schriftgröße schrittweise bis der Text
- * in den Container passt (kein overflow).
+ * Reduces the font size step by step until the text fits inside
+ * its container without overflowing.
  *
- * @param maxFontSize  Startgröße in px (z.B. 88)
- * @param minFontSize  Untergrenze in px (z.B. 32)
- * @param deps         Abhängigkeiten die einen Re-Check auslösen (z.B. [text])
+ * @param maxFontSize Start size in px (for example 88)
+ * @param minFontSize Lower bound in px (for example 32)
+ * @param deps Dependencies that should trigger a reset/re-check (for example [text])
  */
 export function useFitText(
   maxFontSize: number,
@@ -99,7 +103,7 @@ export function useFitText(
     if (fontSize > minFontSize) {
       setFontSize((previous) => Math.max(previous - FONT_SIZE_STEP, minFontSize));
     }
-  }, [fontSize, minFontSize, maxFontSize]);
+  }, [fontSize, minFontSize]);
 
   return [ref, fontSize];
 }
