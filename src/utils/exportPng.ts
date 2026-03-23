@@ -91,7 +91,7 @@ export async function exportPng(
 
     let graphicRoot: HTMLElement;
     if (liveFrame) {
-      if (!liveFrame.isConnected) {
+      if (!document.body.contains(liveFrame)) {
         throw new Error('iframe nicht gefunden.');
       }
 
@@ -123,10 +123,6 @@ export async function exportPng(
       iframe.style.height = `${height}px`;
       iframe.style.border = '0';
       mountNode.appendChild(iframe);
-
-      if (!mountNode.querySelector('iframe')) {
-        throw new Error('iframe nicht gefunden.');
-      }
 
       let exportDocument: Document;
       try {
