@@ -5,9 +5,13 @@ export function serializePreviewDocument(document: Document): string {
 }
 
 export async function waitForPreviewReady(document: Document): Promise<void> {
+  const FONT_READY_TIMEOUT_MS = 5_000;
   const fontReady =
     'fonts' in document
-      ? (document.fonts.ready.catch(() => undefined) as Promise<unknown>)
+      ? (Promise.race([
+          document.fonts.ready,
+          new Promise((resolve) => window.setTimeout(resolve, FONT_READY_TIMEOUT_MS)),
+        ]).catch(() => undefined) as Promise<unknown>)
       : Promise.resolve();
   const images = Array.from(document.images);
 
@@ -23,14 +27,11 @@ export async function waitForPreviewReady(document: Document): Promise<void> {
     ),
   ]);
 
-  const frameWindow = document.defaultView;
+  // Use the parent window's requestAnimationFrame instead of the iframe's.
+  // Sandboxed iframes without allow-scripts may never fire rAF callbacks
+  // registered on their own window, causing the export to time out.
   await new Promise<void>((resolve) => {
-    if (!frameWindow?.requestAnimationFrame) {
-      resolve();
-      return;
-    }
-
-    frameWindow.requestAnimationFrame(() => frameWindow.requestAnimationFrame(() => resolve()));
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()));
   });
 }
 
