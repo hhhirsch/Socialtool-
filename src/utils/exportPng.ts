@@ -2,7 +2,7 @@ import html2canvas from 'html2canvas';
 import { applyGeneralPostTitleFit } from '../lib/grafik-builder/useFitText';
 import { buildExportMarkup, EXPORT_ROOT_SELECTOR } from './previewDocument';
 
-const EXPORT_RENDER_DELAY_MS = 75;
+const EXPORT_RENDER_SETTLE_DELAY_MS = 75;
 const EXPORT_CONTAINER_ERROR = 'Export-Container konnte nicht erzeugt werden.';
 const PNG_EXPORT_STATUS = {
   preparing: 'PNG wird erstellt…',
@@ -12,6 +12,7 @@ const PNG_EXPORT_STATUS = {
   pngCreated: 'PNG erstellt',
   downloadStarted: 'Download gestartet',
   imageOpened: 'Bild öffnen und lange drücken zum Speichern',
+  imageOpenedSameTab: 'Popup blockiert — PNG wird im aktuellen Tab geöffnet',
   failed: 'Export fehlgeschlagen — bitte erneut versuchen',
 } as const;
 
@@ -45,7 +46,7 @@ function getFilenameWithExtension(filename: string): string {
   return filename.endsWith('.png') ? filename : `${filename}.png`;
 }
 
-function openImageInTab(dataUrl: string, filename: string): void {
+function openImageInTab(dataUrl: string, filename: string): boolean {
   const openedTab = window.open('', '_blank');
 
   if (openedTab && !openedTab.closed) {
@@ -63,10 +64,11 @@ function openImageInTab(dataUrl: string, filename: string): void {
   </body>
 </html>`);
     openedTab.document.close();
-    return;
+    return true;
   }
 
   window.location.href = dataUrl;
+  return false;
 }
 
 function getExportRoot(container: ParentNode): HTMLElement {
@@ -90,9 +92,9 @@ function waitForAnimationFrame(): Promise<void> {
   });
 }
 
-async function waitForExportAssetsBestEffort(): Promise<void> {
+async function waitForExportRenderSettled(): Promise<void> {
   await waitForAnimationFrame();
-  await waitForTimeout(EXPORT_RENDER_DELAY_MS);
+  await waitForTimeout(EXPORT_RENDER_SETTLE_DELAY_MS);
 }
 
 /**
@@ -145,7 +147,7 @@ export async function exportPng(
 
     reportExportStatus(PNG_EXPORT_STATUS.exportRootFound, onStatus);
     applyGeneralPostTitleFit(graphicRoot);
-    await waitForExportAssetsBestEffort();
+    await waitForExportRenderSettled();
     let dataUrl: string;
     try {
       const canvas = await html2canvas(graphicRoot, {
@@ -165,8 +167,11 @@ export async function exportPng(
     reportExportStatus(PNG_EXPORT_STATUS.pngCreated, onStatus);
 
     if (ios) {
-      reportExportStatus(PNG_EXPORT_STATUS.imageOpened, onStatus);
-      openImageInTab(dataUrl, filenameWithExtension);
+      const openedInNewTab = openImageInTab(dataUrl, filenameWithExtension);
+      reportExportStatus(
+        openedInNewTab ? PNG_EXPORT_STATUS.imageOpened : PNG_EXPORT_STATUS.imageOpenedSameTab,
+        onStatus
+      );
       return;
     }
 
