@@ -11,6 +11,7 @@ export async function exportPng(
   width: number,
   height: number,
   filename: string,
+  openedTab: ReturnType<typeof window.open>,
   liveFrame?: HTMLIFrameElement | null
 ): Promise<void> {
   let mountNode: HTMLDivElement | null = null;
@@ -68,10 +69,13 @@ export async function exportPng(
     const blobUrl = URL.createObjectURL(blob);
     window.setTimeout(() => URL.revokeObjectURL(blobUrl), BLOB_URL_REVOCATION_DELAY_MS);
 
-    const newTab = window.open(blobUrl, '_blank');
-    if (!newTab) {
-      throw new Error(`PNG "${filename}.png" konnte nicht in neuem Tab geöffnet werden.`);
+    if (!openedTab) {
+      throw new Error(
+        `PNG "${filename}.png" konnte nicht in neuem Tab geöffnet werden. Bitte Pop-up-Blocker prüfen.`
+      );
     }
+
+    openedTab.location.href = blobUrl;
   } catch (error) {
     throw error instanceof Error ? error : new Error(String(error));
   } finally {

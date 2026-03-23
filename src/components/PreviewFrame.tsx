@@ -23,6 +23,7 @@ export function PreviewFrame({ documentHtml, width, height, scale, frameRef, onL
         width,
         height,
         transform: `scale(${scale})`,
+        transformOrigin: 'top left',
       }}
     />
   );
