@@ -61,7 +61,7 @@ export const generalPostTemplate: GraphicTemplate = {
 
     .s5-title {
       position: absolute;
-      top: 200px; left: 72px; right: 72px; z-index: 5;
+      top: 200px; left: 72px; right: 44%; z-index: 5;
       background: none;
       border: none;
       border-radius: 0;
@@ -70,6 +70,7 @@ export const generalPostTemplate: GraphicTemplate = {
       font-family: 'Instrument Serif', serif;
       font-size: 88px; line-height: 1.05;
       color: var(--text); letter-spacing: -2px;
+      overflow: hidden;
     }
 
     .s5-title em { font-style: italic; color: var(--gold); }
@@ -78,24 +79,26 @@ export const generalPostTemplate: GraphicTemplate = {
 
     .s5-body {
       position: absolute;
-      top: 576px; left: 72px; right: 72px; z-index: 5;
+      top: 576px; left: 72px; right: 44%; z-index: 5;
       font-size: 26px; font-weight: 300;
       color: rgba(203,213,225,0.65); line-height: 1.65;
+      overflow: hidden;
     }
 
     .s5-panel {
       position: absolute;
       top: 0; right: 0; bottom: 0;
-      width: 420px; z-index: 2;
+      width: 40%; z-index: 2;
       background: #131f35;
-      clip-path: polygon(15% 0, 100% 0, 100% 100%, 0% 100%);
+      clip-path: polygon(18% 0, 100% 0, 100% 100%, 0% 100%);
+      overflow: hidden;
     }
 
     .s5-quote {
       position: absolute;
       right: 48px; top: 50%;
       transform: translateY(-50%);
-      width: 320px; z-index: 5; text-align: center;
+      width: 28%; z-index: 3; text-align: center;
     }
 
     .s5-quote-mark {
