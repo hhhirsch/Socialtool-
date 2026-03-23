@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { RefObject } from 'react';
+import { applyGeneralPostTitleFit } from '../lib/grafik-builder/useFitText';
 import type { BackgroundMode, Preset, ZoomLevel } from '../types';
 import { BackgroundToggle } from './BackgroundToggle';
 import { ZoomControls } from './ZoomControls';
@@ -43,6 +44,29 @@ function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
   return size;
 }
 
+const FONT_READY_TIMEOUT_MS = 1_000;
+
+async function waitForDocumentFontsBestEffort(previewDocument: Document): Promise<void> {
+  if (!('fonts' in previewDocument)) {
+    return;
+  }
+
+  try {
+    await Promise.race([
+      previewDocument.fonts.ready,
+      new Promise((resolve) => setTimeout(resolve, FONT_READY_TIMEOUT_MS)),
+    ]);
+  } catch {
+    // Best effort only.
+  }
+}
+
+function waitForAnimationFrame(): Promise<void> {
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => resolve());
+  });
+}
+
 export function PreviewPanel({
   documentHtml,
   preset,
@@ -55,6 +79,9 @@ export function PreviewPanel({
   onFrameLoad,
 }: Props) {
   const frameAreaRef = useRef<HTMLDivElement>(null);
+  const internalFrameRef = useRef<HTMLIFrameElement>(null);
+  const activeFrameRef = frameRef ?? internalFrameRef;
+  const [frameLoadCount, setFrameLoadCount] = useState(0);
   const size = useContainerSize(frameAreaRef);
 
   const scale = useMemo(() => {
@@ -73,6 +100,35 @@ export function PreviewPanel({
   useEffect(() => {
     onScaleChange(scale);
   }, [onScaleChange, scale]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fitTitle = async () => {
+      const previewDocument = activeFrameRef.current?.contentDocument;
+      if (!previewDocument) {
+        return;
+      }
+
+      await waitForDocumentFontsBestEffort(previewDocument);
+      await waitForAnimationFrame();
+
+      if (!cancelled) {
+        applyGeneralPostTitleFit(previewDocument);
+      }
+    };
+
+    void fitTitle();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeFrameRef, documentHtml, frameLoadCount]);
+
+  const handleFrameLoad = useCallback(() => {
+    setFrameLoadCount((current) => current + 1);
+    onFrameLoad?.();
+  }, [onFrameLoad]);
 
   const backgroundClass =
     backgroundMode === 'gray'
@@ -122,8 +178,8 @@ export function PreviewPanel({
             width={preset.width}
             height={preset.height}
             scale={scale}
-            frameRef={frameRef}
-            onLoad={onFrameLoad}
+            frameRef={activeFrameRef}
+            onLoad={handleFrameLoad}
           />
         </div>
       </div>
