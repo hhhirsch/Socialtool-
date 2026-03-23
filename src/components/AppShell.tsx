@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useAppState } from '../hooks/useAppState';
-import { exportPng, writeExportTabMessage } from '../utils/exportPng';
+import { exportPng, isIOSWebKit, writeExportTabMessage } from '../utils/exportPng';
 import { exportPdf } from '../utils/exportPdf';
 import { generateFilename } from '../utils/generateFilename';
 import { copySlideHtml } from '../utils/generateSlideHtml';
@@ -18,10 +18,14 @@ import { TemplateSelector } from './TemplateSelector';
 import { ToastMessage } from './ToastMessage';
 import styles from './AppShell.module.css';
 
+const EXPORT_STATUS_DISPLAY_DURATION_MS = 4_000;
+
 export function AppShell() {
   const templates = useMemo(() => getTemplates(), []);
   const previewFrameRef = useRef<HTMLIFrameElement>(null);
   const [copied, setCopied] = useState(false);
+  const [exportStatus, setExportStatus] = useState<string | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const {
     state,
     toast,
@@ -50,6 +54,7 @@ export function AppShell() {
     () => getPresetById(state.selectedPresetId),
     [state.selectedPresetId]
   );
+  const isIOS = useMemo(() => isIOSWebKit(), []);
   const resolvedFieldValues = useMemo(
     () => selectedTemplate.resolveFieldValues?.(state.fieldValues) ?? state.fieldValues,
     [selectedTemplate, state.fieldValues]
@@ -76,10 +81,13 @@ export function AppShell() {
   );
 
   const handleExportPng = useCallback(async () => {
-    const openedTab = window.open('', '_blank');
+    setIsExporting(true);
+    setExportStatus('PNG wird erstellt…');
+
+    const openedTab = isIOS ? window.open('', '_blank') : null;
     if (openedTab) {
       try {
-        writeExportTabMessage(openedTab, 'PNG-Export', 'PNG wird vorbereitet...');
+        writeExportTabMessage(openedTab, 'PNG-Export', 'PNG wird erstellt…');
       } catch {
         openedTab.close();
       }
@@ -92,6 +100,7 @@ export function AppShell() {
         selectedPreset.width,
         selectedPreset.height,
         generateFilename(selectedPreset, selectedTemplate),
+        setExportStatus,
         openedTab
       );
     } catch (exportError) {
@@ -100,8 +109,11 @@ export function AppShell() {
           exportError instanceof Error ? exportError.message : 'Unbekannter Fehler'
         }`
       );
+    } finally {
+      setIsExporting(false);
+      window.setTimeout(() => setExportStatus(null), EXPORT_STATUS_DISPLAY_DURATION_MS);
     }
-  }, [renderedHtml, selectedPreset, selectedTemplate, showError]);
+  }, [isIOS, renderedHtml, selectedPreset, selectedTemplate, showError]);
 
   const handleCopyHtml = useCallback(async () => {
     try {
@@ -267,9 +279,10 @@ export function AppShell() {
               <button
                 type="button"
                 onClick={handleExportPng}
+                disabled={isExporting}
                 className={styles.exportPrimaryButton}
               >
-                PNG exportieren
+                {isExporting ? 'Wird erstellt…' : isIOS ? 'PNG öffnen' : 'PNG exportieren'}
               </button>
               <button
                 type="button"
@@ -286,6 +299,7 @@ export function AppShell() {
                 {copied ? '✓ Kopiert' : 'HTML kopieren'}
               </button>
             </div>
+            {exportStatus && <p className={styles.exportStatus}>{exportStatus}</p>}
           </div>
         )}
 
