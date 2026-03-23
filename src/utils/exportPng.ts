@@ -2,9 +2,9 @@ import html2canvas from 'html2canvas';
 import { buildExportMarkup, EXPORT_ROOT_SELECTOR } from './previewDocument';
 
 const BLOB_URL_REVOCATION_DELAY_MS = 10_000;
-const EXPORT_ASSET_TIMEOUT_MS = 5_000;
-const PREVIEW_READY_TIMEOUT_MS = 15_000;
-const PREVIEW_READY_TIMEOUT_ERROR = 'Export-Inhalt konnte nicht rechtzeitig vorbereitet werden.';
+const EXPORT_ASSET_TIMEOUT_MS = 1_000;
+const EXPORT_RENDER_DELAY_MS = 100;
+const EXPORT_CONTAINER_ERROR = 'Export-Container konnte nicht erzeugt werden.';
 const PNG_EXPORT_STATUS = {
   preparing: 'PNG wird vorbereitet...',
   exportContainerCreated: 'Export-Container erstellt',
@@ -93,67 +93,75 @@ function writeExportTabError(openedTab: Window, error: Error): void {
 function getExportRoot(container: ParentNode): HTMLElement {
   const exportRoot = container.querySelector(EXPORT_ROOT_SELECTOR);
   if (!(exportRoot instanceof HTMLElement)) {
-    throw new Error('Grafikinhalt für den Export wurde nicht gefunden.');
+    throw new Error('Export-Root fehlt: Grafikinhalt für den Export wurde nicht gefunden.');
   }
 
   return exportRoot;
 }
 
-async function waitForExportAssets(container: HTMLElement): Promise<void> {
-  const fontReady =
-    'fonts' in document
-      ? (Promise.race([
-          document.fonts.ready,
-          new Promise((resolve) => window.setTimeout(resolve, EXPORT_ASSET_TIMEOUT_MS)),
-        ]).catch(() => undefined) as Promise<unknown>)
-      : Promise.resolve();
-  const images = Array.from(container.querySelectorAll('img'));
-
-  await Promise.all([
-    fontReady,
-    ...images.map((image) =>
-      image.complete
-        ? Promise.resolve()
-        : new Promise<void>((resolve) => {
-            image.addEventListener('load', () => resolve(), { once: true });
-            image.addEventListener('error', () => resolve(), { once: true });
-          })
-    ),
-  ]);
-
-  await new Promise<void>((resolve) => {
-    // Give browsers a short settling window so imported fonts, image metrics and
-    // layout-dependent styles are reflected before html2canvas reads the DOM.
-    window.setTimeout(() => {
-      window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()));
-    }, 50);
+function waitForTimeout(delay: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, delay);
   });
 }
 
-async function waitForExportReadyWithTimeout(container: HTMLElement): Promise<void> {
-  let timeoutId: number | undefined;
+function waitForAnimationFrame(): Promise<void> {
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => resolve());
+  });
+}
+
+async function waitForFontsBestEffort(): Promise<void> {
+  if (!('fonts' in document)) {
+    return;
+  }
 
   try {
-    await Promise.race([
-      waitForExportAssets(container),
-      new Promise<never>((_, reject) => {
-        timeoutId = window.setTimeout(() => {
-          reject(new Error(PREVIEW_READY_TIMEOUT_ERROR));
-        }, PREVIEW_READY_TIMEOUT_MS);
-      }),
-    ]);
-  } catch (error) {
-    const normalizedError = normalizeError(error);
-    if (normalizedError.message === PREVIEW_READY_TIMEOUT_ERROR) {
-      throw normalizedError;
-    }
-
-    throw new Error(`Export-Inhalt konnte nicht vorbereitet werden: ${normalizedError.message}`);
-  } finally {
-    if (timeoutId !== undefined) {
-      window.clearTimeout(timeoutId);
-    }
+    await Promise.race([document.fonts.ready, waitForTimeout(EXPORT_ASSET_TIMEOUT_MS)]);
+  } catch {
+    // Best effort only.
   }
+}
+
+function waitForImageBestEffort(image: HTMLImageElement): Promise<void> {
+  if (image.complete) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    const timeoutState: { current?: number } = {};
+    let settled = false;
+
+    const finalize = (): void => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+
+      if (timeoutState.current !== undefined) {
+        window.clearTimeout(timeoutState.current);
+      }
+
+      image.removeEventListener('load', finalize);
+      image.removeEventListener('error', finalize);
+      resolve();
+    };
+
+    image.addEventListener('load', finalize);
+    image.addEventListener('error', finalize);
+    timeoutState.current = window.setTimeout(finalize, EXPORT_ASSET_TIMEOUT_MS);
+  });
+}
+
+async function waitForExportAssetsBestEffort(container: HTMLElement): Promise<void> {
+  await waitForAnimationFrame();
+  await waitForTimeout(EXPORT_RENDER_DELAY_MS);
+
+  await Promise.all([
+    waitForFontsBestEffort(),
+    Promise.all(Array.from(container.querySelectorAll('img')).map((image) => waitForImageBestEffort(image))),
+  ]);
 }
 
 /**
@@ -191,17 +199,27 @@ export async function exportPng(
     mountNode.style.overflow = 'hidden';
     mountNode.style.pointerEvents = 'none';
     mountNode.innerHTML = `<style>${styles}</style>${markup}`;
+
+    if (!(document.body instanceof HTMLBodyElement)) {
+      throw new Error(EXPORT_CONTAINER_ERROR);
+    }
+
     document.body.appendChild(mountNode);
 
     writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.exportContainerCreated);
-    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.waitingForAssets);
-    await waitForExportReadyWithTimeout(mountNode);
-    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.assetsReady);
+
+    if (!mountNode.isConnected) {
+      throw new Error(EXPORT_CONTAINER_ERROR);
+    }
+
     writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.searchingExportRoot);
 
     const graphicRoot = getExportRoot(mountNode);
 
     writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.exportRootFound);
+    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.waitingForAssets);
+    await waitForExportAssetsBestEffort(mountNode);
+    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.assetsReady);
 
     let canvas: HTMLCanvasElement;
     writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.html2canvasStarted);
