@@ -1,18 +1,15 @@
 import html2canvas from 'html2canvas';
-import { getExportRoot, waitForIframeDocument, waitForPreviewReady } from './previewExport';
+import { buildExportMarkup, EXPORT_ROOT_SELECTOR } from './previewDocument';
 
 const BLOB_URL_REVOCATION_DELAY_MS = 10_000;
+const EXPORT_ASSET_TIMEOUT_MS = 5_000;
 const PREVIEW_READY_TIMEOUT_MS = 15_000;
-const PREVIEW_READY_TIMEOUT_ERROR = 'Preview-Bereitschaft konnte nicht rechtzeitig bestätigt werden.';
+const PREVIEW_READY_TIMEOUT_ERROR = 'Export-Inhalt konnte nicht rechtzeitig vorbereitet werden.';
 const PNG_EXPORT_STATUS = {
   preparing: 'PNG wird vorbereitet...',
-  iframeFound: 'iframe gefunden',
-  checkingIframeContentDocument: 'prüfe iframe.contentDocument',
-  iframeContentDocumentAvailable: 'iframe.contentDocument vorhanden',
-  checkingIframeContentWindow: 'prüfe iframe.contentWindow',
-  iframeContentWindowAvailable: 'iframe.contentWindow vorhanden',
-  waitingForPreviewReady: 'warte auf Preview-Bereitschaft',
-  previewReadyConfirmed: 'Preview-Bereitschaft bestätigt',
+  exportContainerCreated: 'Export-Container erstellt',
+  waitingForAssets: 'warte auf Fonts und Bilder',
+  assetsReady: 'Fonts und Bilder bereit',
   searchingExportRoot: 'suche Export-Root',
   exportRootFound: 'Export-Root gefunden',
   html2canvasStarted: 'html2canvas gestartet',
@@ -93,12 +90,52 @@ function writeExportTabError(openedTab: Window, error: Error): void {
   `;
 }
 
-async function waitForPreviewReadyWithTimeout(document: Document): Promise<void> {
+function getExportRoot(container: ParentNode): HTMLElement {
+  const exportRoot = container.querySelector(EXPORT_ROOT_SELECTOR);
+  if (!(exportRoot instanceof HTMLElement)) {
+    throw new Error('Grafikinhalt für den Export wurde nicht gefunden.');
+  }
+
+  return exportRoot;
+}
+
+async function waitForExportAssets(container: HTMLElement): Promise<void> {
+  const fontReady =
+    'fonts' in document
+      ? (Promise.race([
+          document.fonts.ready,
+          new Promise((resolve) => window.setTimeout(resolve, EXPORT_ASSET_TIMEOUT_MS)),
+        ]).catch(() => undefined) as Promise<unknown>)
+      : Promise.resolve();
+  const images = Array.from(container.querySelectorAll('img'));
+
+  await Promise.all([
+    fontReady,
+    ...images.map((image) =>
+      image.complete
+        ? Promise.resolve()
+        : new Promise<void>((resolve) => {
+            image.addEventListener('load', () => resolve(), { once: true });
+            image.addEventListener('error', () => resolve(), { once: true });
+          })
+    ),
+  ]);
+
+  await new Promise<void>((resolve) => {
+    // Give browsers a short settling window so imported fonts, image metrics and
+    // layout-dependent styles are reflected before html2canvas reads the DOM.
+    window.setTimeout(() => {
+      window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()));
+    }, 50);
+  });
+}
+
+async function waitForExportReadyWithTimeout(container: HTMLElement): Promise<void> {
   let timeoutId: number | undefined;
 
   try {
     await Promise.race([
-      waitForPreviewReady(document),
+      waitForExportAssets(container),
       new Promise<never>((_, reject) => {
         timeoutId = window.setTimeout(() => {
           reject(new Error(PREVIEW_READY_TIMEOUT_ERROR));
@@ -111,7 +148,7 @@ async function waitForPreviewReadyWithTimeout(document: Document): Promise<void>
       throw normalizedError;
     }
 
-    throw new Error(`Preview-Bereitschaft konnte nicht bestätigt werden: ${normalizedError.message}`);
+    throw new Error(`Export-Inhalt konnte nicht vorbereitet werden: ${normalizedError.message}`);
   } finally {
     if (timeoutId !== undefined) {
       window.clearTimeout(timeoutId);
@@ -123,12 +160,12 @@ async function waitForPreviewReadyWithTimeout(document: Document): Promise<void>
  * Exports the isolated graphic in its original preset resolution.
  */
 export async function exportPng(
-  documentHtml: string,
+  html: string,
+  css: string,
   width: number,
   height: number,
   filename: string,
-  openedTab: ReturnType<typeof window.open>,
-  liveFrame?: HTMLIFrameElement | null
+  openedTab: ReturnType<typeof window.open>
 ): Promise<void> {
   let mountNode: HTMLDivElement | null = null;
 
@@ -142,95 +179,29 @@ export async function exportPng(
     ensureOpenedTab(openedTab);
     writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.preparing);
 
-    let graphicRoot: HTMLElement;
-    if (liveFrame) {
-      if (!document.body.contains(liveFrame)) {
-        throw new Error('iframe nicht gefunden.');
-      }
+    const { markup, styles } = buildExportMarkup(html, css, width, height);
 
-      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.iframeFound);
-      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.checkingIframeContentDocument);
+    mountNode = document.createElement('div');
+    mountNode.setAttribute('aria-hidden', 'true');
+    mountNode.style.position = 'fixed';
+    mountNode.style.left = '-99999px';
+    mountNode.style.top = '0';
+    mountNode.style.width = `${width}px`;
+    mountNode.style.height = `${height}px`;
+    mountNode.style.overflow = 'hidden';
+    mountNode.style.pointerEvents = 'none';
+    mountNode.innerHTML = `<style>${styles}</style>${markup}`;
+    document.body.appendChild(mountNode);
 
-      try {
-        await waitForIframeDocument(liveFrame);
-      } catch {
-        throw new Error('iframe.contentDocument ist nicht verfügbar.');
-      }
+    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.exportContainerCreated);
+    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.waitingForAssets);
+    await waitForExportReadyWithTimeout(mountNode);
+    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.assetsReady);
+    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.searchingExportRoot);
 
-      const liveDocument = liveFrame.contentDocument;
-      if (!liveDocument) {
-        throw new Error('iframe.contentDocument ist nicht verfügbar.');
-      }
+    const graphicRoot = getExportRoot(mountNode);
 
-      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.iframeContentDocumentAvailable);
-      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.checkingIframeContentWindow);
-
-      if (!liveFrame.contentWindow) {
-        throw new Error('iframe.contentWindow ist nicht verfügbar.');
-      }
-
-      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.iframeContentWindowAvailable);
-      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.waitingForPreviewReady);
-      await waitForPreviewReadyWithTimeout(liveDocument);
-      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.previewReadyConfirmed);
-      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.searchingExportRoot);
-
-      try {
-        graphicRoot = getExportRoot(liveDocument);
-      } catch {
-        throw new Error('Export-Root im iframe wurde nicht gefunden.');
-      }
-
-      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.exportRootFound);
-    } else {
-      mountNode = document.createElement('div');
-      mountNode.style.position = 'fixed';
-      mountNode.style.inset = '0 auto auto -99999px';
-      mountNode.style.width = `${width}px`;
-      mountNode.style.height = `${height}px`;
-      document.body.appendChild(mountNode);
-
-      const iframe = document.createElement('iframe');
-      iframe.setAttribute('sandbox', 'allow-same-origin');
-      iframe.style.width = `${width}px`;
-      iframe.style.height = `${height}px`;
-      iframe.style.border = '0';
-      mountNode.appendChild(iframe);
-      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.iframeFound);
-      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.checkingIframeContentDocument);
-
-      try {
-        await waitForIframeDocument(iframe, documentHtml);
-      } catch {
-        throw new Error('iframe.contentDocument ist nicht verfügbar.');
-      }
-
-      const exportDocument = iframe.contentDocument;
-      if (!exportDocument) {
-        throw new Error('iframe.contentDocument ist nicht verfügbar.');
-      }
-
-      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.iframeContentDocumentAvailable);
-      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.checkingIframeContentWindow);
-
-      if (!iframe.contentWindow) {
-        throw new Error('iframe.contentWindow ist nicht verfügbar.');
-      }
-
-      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.iframeContentWindowAvailable);
-      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.waitingForPreviewReady);
-      await waitForPreviewReadyWithTimeout(exportDocument);
-      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.previewReadyConfirmed);
-      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.searchingExportRoot);
-
-      try {
-        graphicRoot = getExportRoot(exportDocument);
-      } catch {
-        throw new Error('Export-Root im iframe wurde nicht gefunden.');
-      }
-
-      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.exportRootFound);
-    }
+    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.exportRootFound);
 
     let canvas: HTMLCanvasElement;
     writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.html2canvasStarted);
