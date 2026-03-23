@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useAppState } from '../hooks/useAppState';
-import { exportPng, isIOSWebKit, writeExportTabMessage } from '../utils/exportPng';
+import { exportPng, isIOSWebKit } from '../utils/exportPng';
 import { exportPdf } from '../utils/exportPdf';
 import { generateFilename } from '../utils/generateFilename';
 import { copySlideHtml } from '../utils/generateSlideHtml';
@@ -84,15 +84,6 @@ export function AppShell() {
     setIsExporting(true);
     setExportStatus('PNG wird erstellt…');
 
-    const openedTab = isIOS ? window.open('', '_blank') : null;
-    if (openedTab) {
-      try {
-        writeExportTabMessage(openedTab, 'PNG-Export', 'PNG wird erstellt…');
-      } catch {
-        openedTab.close();
-      }
-    }
-
     try {
       await exportPng(
         renderedHtml,
@@ -100,8 +91,7 @@ export function AppShell() {
         selectedPreset.width,
         selectedPreset.height,
         generateFilename(selectedPreset, selectedTemplate),
-        setExportStatus,
-        openedTab
+        setExportStatus
       );
     } catch (exportError) {
       showError(
@@ -113,7 +103,7 @@ export function AppShell() {
       setIsExporting(false);
       window.setTimeout(() => setExportStatus(null), EXPORT_STATUS_DISPLAY_DURATION_MS);
     }
-  }, [isIOS, renderedHtml, selectedPreset, selectedTemplate, showError]);
+  }, [renderedHtml, selectedPreset, selectedTemplate, showError]);
 
   const handleCopyHtml = useCallback(async () => {
     try {
