@@ -210,12 +210,13 @@ export async function exportPng(
   openedTab?: ReturnType<typeof window.open>
 ): Promise<void> {
   let mountNode: HTMLDivElement | null = null;
+  const ios = isIOSWebKit();
+  const effectiveOpenedTab = openedTab ?? (ios ? window.open('', '_blank') : null);
 
   try {
     const filenameWithExtension = getFilenameWithExtension(filename);
-    const ios = isIOSWebKit();
 
-    reportExportStatus(PNG_EXPORT_STATUS.preparing, onStatus, openedTab);
+    reportExportStatus(PNG_EXPORT_STATUS.preparing, onStatus, effectiveOpenedTab);
 
     const { markup, styles } = buildExportMarkup(html, css, width, height);
 
@@ -236,20 +237,20 @@ export async function exportPng(
 
     document.body.appendChild(mountNode);
 
-    reportExportStatus(PNG_EXPORT_STATUS.exportContainerCreated, onStatus, openedTab);
+    reportExportStatus(PNG_EXPORT_STATUS.exportContainerCreated, onStatus, effectiveOpenedTab);
 
     if (!mountNode.isConnected) {
       throw new Error(EXPORT_CONTAINER_ERROR);
     }
 
-    reportExportStatus(PNG_EXPORT_STATUS.searchingExportRoot, onStatus, openedTab);
+    reportExportStatus(PNG_EXPORT_STATUS.searchingExportRoot, onStatus, effectiveOpenedTab);
 
     const graphicRoot = getExportRoot(mountNode);
 
-    reportExportStatus(PNG_EXPORT_STATUS.exportRootFound, onStatus, openedTab);
-    reportExportStatus(PNG_EXPORT_STATUS.waitingForAssets, onStatus, openedTab);
+    reportExportStatus(PNG_EXPORT_STATUS.exportRootFound, onStatus, effectiveOpenedTab);
+    reportExportStatus(PNG_EXPORT_STATUS.waitingForAssets, onStatus, effectiveOpenedTab);
     await waitForExportAssetsBestEffort(mountNode);
-    reportExportStatus(PNG_EXPORT_STATUS.assetsReady, onStatus, openedTab);
+    reportExportStatus(PNG_EXPORT_STATUS.assetsReady, onStatus, effectiveOpenedTab);
     let dataUrl: string;
     try {
       const exportOptions = {
@@ -273,11 +274,11 @@ export async function exportPng(
       throw new Error(`html-to-image fehlgeschlagen: ${normalizeError(error).message}`);
     }
 
-    reportExportStatus(PNG_EXPORT_STATUS.pngCreated, onStatus, openedTab);
+    reportExportStatus(PNG_EXPORT_STATUS.pngCreated, onStatus, effectiveOpenedTab);
 
     if (ios) {
-      reportExportStatus(PNG_EXPORT_STATUS.imageOpened, onStatus, openedTab);
-      openImageInTab(dataUrl, filenameWithExtension, openedTab);
+      reportExportStatus(PNG_EXPORT_STATUS.imageOpened, onStatus, effectiveOpenedTab);
+      openImageInTab(dataUrl, filenameWithExtension, effectiveOpenedTab);
       return;
     }
 
@@ -288,13 +289,13 @@ export async function exportPng(
     document.body.appendChild(link);
     link.click();
     link.remove();
-    reportExportStatus(PNG_EXPORT_STATUS.downloadStarted, onStatus, openedTab);
+    reportExportStatus(PNG_EXPORT_STATUS.downloadStarted, onStatus, effectiveOpenedTab);
   } catch (error) {
     const normalizedError = normalizeError(error);
     onStatus?.(PNG_EXPORT_STATUS.failed);
 
-    if (openedTab && !openedTab.closed) {
-      writeExportTabError(openedTab, normalizedError);
+    if (effectiveOpenedTab && !effectiveOpenedTab.closed) {
+      writeExportTabError(effectiveOpenedTab, normalizedError);
     }
 
     throw normalizedError;
