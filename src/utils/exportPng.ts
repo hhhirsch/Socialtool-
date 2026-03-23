@@ -111,23 +111,46 @@ function waitForAnimationFrame(): Promise<void> {
   });
 }
 
+async function waitForFontsBestEffort(): Promise<void> {
+  if (!('fonts' in document)) {
+    return;
+  }
+
+  try {
+    await Promise.race([document.fonts.ready, waitForTimeout(EXPORT_ASSET_TIMEOUT_MS)]);
+  } catch {
+    // Best effort only.
+  }
+}
+
 function waitForImageBestEffort(image: HTMLImageElement): Promise<void> {
   if (image.complete) {
     return Promise.resolve();
   }
 
   return new Promise((resolve) => {
-    let timeoutId = 0;
+    let timeoutId: number | undefined;
+    let settled = false;
+
     const finalize = (): void => {
-      window.clearTimeout(timeoutId);
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+
       image.removeEventListener('load', finalize);
       image.removeEventListener('error', finalize);
       resolve();
     };
-    timeoutId = window.setTimeout(finalize, EXPORT_ASSET_TIMEOUT_MS);
 
-    image.addEventListener('load', finalize, { once: true });
-    image.addEventListener('error', finalize, { once: true });
+    image.addEventListener('load', finalize);
+    image.addEventListener('error', finalize);
+    timeoutId = window.setTimeout(finalize, EXPORT_ASSET_TIMEOUT_MS);
   });
 }
 
@@ -135,17 +158,10 @@ async function waitForExportAssetsBestEffort(container: HTMLElement): Promise<vo
   await waitForAnimationFrame();
   await waitForTimeout(EXPORT_RENDER_DELAY_MS);
 
-  const fontReady =
-    'fonts' in document
-      ? Promise.race([document.fonts.ready, waitForTimeout(EXPORT_ASSET_TIMEOUT_MS)]).catch(
-          () => undefined
-        )
-      : Promise.resolve();
-  const imageReady = Promise.all(
-    Array.from(container.querySelectorAll('img')).map((image) => waitForImageBestEffort(image))
-  ).catch(() => undefined);
-
-  await Promise.allSettled([fontReady, imageReady]);
+  await Promise.all([
+    waitForFontsBestEffort(),
+    Promise.all(Array.from(container.querySelectorAll('img')).map((image) => waitForImageBestEffort(image))),
+  ]);
 }
 
 /**
