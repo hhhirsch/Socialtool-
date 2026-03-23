@@ -129,7 +129,7 @@ function waitForImageBestEffort(image: HTMLImageElement): Promise<void> {
   }
 
   return new Promise((resolve) => {
-    let timeoutId: number | undefined;
+    const timeoutState: { current?: number } = {};
     let settled = false;
 
     const finalize = (): void => {
@@ -139,8 +139,8 @@ function waitForImageBestEffort(image: HTMLImageElement): Promise<void> {
 
       settled = true;
 
-      if (timeoutId !== undefined) {
-        window.clearTimeout(timeoutId);
+      if (timeoutState.current !== undefined) {
+        window.clearTimeout(timeoutState.current);
       }
 
       image.removeEventListener('load', finalize);
@@ -150,7 +150,7 @@ function waitForImageBestEffort(image: HTMLImageElement): Promise<void> {
 
     image.addEventListener('load', finalize);
     image.addEventListener('error', finalize);
-    timeoutId = window.setTimeout(finalize, EXPORT_ASSET_TIMEOUT_MS);
+    timeoutState.current = window.setTimeout(finalize, EXPORT_ASSET_TIMEOUT_MS);
   });
 }
 
