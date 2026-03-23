@@ -145,7 +145,9 @@ function waitForAnimationFrame(): Promise<void> {
   });
 }
 
-async function waitForFontsBestEffort(): Promise<void> {
+async function waitForExportAssetsBestEffort(_container: HTMLElement): Promise<void> {
+  await new Promise((resolve) => window.setTimeout(resolve, 100));
+}
   if (!('fonts' in document)) {
     return;
   }
