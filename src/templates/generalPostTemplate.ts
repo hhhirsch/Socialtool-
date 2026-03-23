@@ -98,7 +98,7 @@ export const generalPostTemplate: GraphicTemplate = {
       position: absolute;
       right: 48px; top: 50%;
       transform: translateY(-50%);
-      width: 28%; z-index: 3; text-align: center;
+      width: 28%; z-index: 6; text-align: center;
     }
 
     .s5-quote-mark {
