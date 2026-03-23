@@ -2,7 +2,7 @@ import html2canvas from 'html2canvas';
 import { applyGeneralPostTitleFit } from '../lib/grafik-builder/useFitText';
 import { buildExportMarkup, EXPORT_ROOT_SELECTOR } from './previewDocument';
 
-const EXPORT_ASSET_TIMEOUT_MS = 1_000;
+const EXPORT_ASSET_TIMEOUT_MS = 150;
 const EXPORT_RENDER_DELAY_MS = 100;
 const EXPORT_CONTAINER_ERROR = 'Export-Container konnte nicht erzeugt werden.';
 const PNG_EXPORT_STATUS = {
@@ -149,6 +149,7 @@ async function waitForFontsBestEffort(): Promise<void> {
   if (!('fonts' in document)) {
     return;
   }
+  if (isIOSWebKit()) return;
 
   try {
     await Promise.race([document.fonts.ready, waitForTimeout(EXPORT_ASSET_TIMEOUT_MS)]);
