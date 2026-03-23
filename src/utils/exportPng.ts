@@ -18,7 +18,7 @@ function normalizeError(error: unknown): Error {
 
 function ensureOpenedTab(
   openedTab: ReturnType<typeof window.open>,
-  message = 'Der geöffnete Export-Tab wurde bereits geschlossen.'
+  message = 'Der geöffnete PNG-Export-Tab ist nicht verfügbar oder wurde geschlossen.'
 ): asserts openedTab is Window {
   if (!openedTab) {
     throw new Error(message);
@@ -50,6 +50,14 @@ export function writeExportTabMessage(
   </body>
 </html>`);
   openedTab.document.close();
+}
+
+function writeExportTabStatus(
+  openedTab: ReturnType<typeof window.open>,
+  message: string
+): void {
+  ensureOpenedTab(openedTab);
+  writeExportTabMessage(openedTab, 'PNG-Export', message);
 }
 
 function writeExportTabError(openedTab: Window, error: Error): void {
@@ -88,12 +96,15 @@ export async function exportPng(
     }
 
     ensureOpenedTab(openedTab);
+    writeExportTabStatus(openedTab, 'PNG wird vorbereitet...');
 
     let graphicRoot: HTMLElement;
     if (liveFrame) {
       if (!document.body.contains(liveFrame)) {
         throw new Error('iframe nicht gefunden.');
       }
+
+      writeExportTabStatus(openedTab, 'iframe gefunden');
 
       let liveDocument: Document;
       try {
@@ -103,12 +114,15 @@ export async function exportPng(
       }
 
       await waitForPreviewReady(liveDocument);
+      writeExportTabStatus(openedTab, 'Preview bereit');
 
       try {
         graphicRoot = getExportRoot(liveDocument);
       } catch (error) {
         throw new Error(`export root nicht gefunden: ${normalizeError(error).message}`);
       }
+
+      writeExportTabStatus(openedTab, 'Export-Root gefunden');
     } else {
       mountNode = document.createElement('div');
       mountNode.style.position = 'fixed';
@@ -123,6 +137,7 @@ export async function exportPng(
       iframe.style.height = `${height}px`;
       iframe.style.border = '0';
       mountNode.appendChild(iframe);
+      writeExportTabStatus(openedTab, 'iframe gefunden');
 
       let exportDocument: Document;
       try {
@@ -132,15 +147,19 @@ export async function exportPng(
       }
 
       await waitForPreviewReady(exportDocument);
+      writeExportTabStatus(openedTab, 'Preview bereit');
 
       try {
         graphicRoot = getExportRoot(exportDocument);
       } catch (error) {
         throw new Error(`export root nicht gefunden: ${normalizeError(error).message}`);
       }
+
+      writeExportTabStatus(openedTab, 'Export-Root gefunden');
     }
 
     let canvas: HTMLCanvasElement;
+    writeExportTabStatus(openedTab, 'html2canvas gestartet');
     try {
       canvas = await html2canvas(graphicRoot, {
         width,
@@ -158,6 +177,8 @@ export async function exportPng(
       throw new Error(`html2canvas fehlgeschlagen: ${normalizeError(error).message}`);
     }
 
+    writeExportTabStatus(openedTab, 'Canvas erzeugt');
+
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob((result) => {
         if (result) {
@@ -169,12 +190,13 @@ export async function exportPng(
       }, 'image/png');
     });
 
+    writeExportTabStatus(openedTab, 'Blob erzeugt');
+
     const blobUrl = URL.createObjectURL(blob);
     window.setTimeout(() => URL.revokeObjectURL(blobUrl), BLOB_URL_REVOCATION_DELAY_MS);
 
     ensureOpenedTab(openedTab);
-
-    console.log('PNG blob erzeugt, navigiere zum Blob');
+    writeExportTabStatus(openedTab, 'Navigiere zum PNG');
     openedTab.location.replace(blobUrl);
   } catch (error) {
     const normalizedError = normalizeError(error);
