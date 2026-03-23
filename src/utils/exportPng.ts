@@ -2,6 +2,16 @@ import html2canvas from 'html2canvas';
 import { getExportRoot, waitForIframeDocument, waitForPreviewReady } from './previewExport';
 
 const BLOB_URL_REVOCATION_DELAY_MS = 10_000;
+const PNG_EXPORT_STATUS = {
+  preparing: 'PNG wird vorbereitet...',
+  iframeFound: 'iframe gefunden',
+  previewReady: 'Preview bereit',
+  exportRootFound: 'Export-Root gefunden',
+  html2canvasStarted: 'html2canvas gestartet',
+  canvasCreated: 'Canvas erzeugt',
+  blobCreated: 'Blob erzeugt',
+  navigatingToPng: 'Navigiere zum PNG',
+} as const;
 
 function escapeHtml(value: string): string {
   return value
@@ -96,7 +106,7 @@ export async function exportPng(
     }
 
     ensureOpenedTab(openedTab);
-    writeExportTabStatus(openedTab, 'PNG wird vorbereitet...');
+    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.preparing);
 
     let graphicRoot: HTMLElement;
     if (liveFrame) {
@@ -104,7 +114,7 @@ export async function exportPng(
         throw new Error('iframe nicht gefunden.');
       }
 
-      writeExportTabStatus(openedTab, 'iframe gefunden');
+      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.iframeFound);
 
       let liveDocument: Document;
       try {
@@ -114,7 +124,7 @@ export async function exportPng(
       }
 
       await waitForPreviewReady(liveDocument);
-      writeExportTabStatus(openedTab, 'Preview bereit');
+      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.previewReady);
 
       try {
         graphicRoot = getExportRoot(liveDocument);
@@ -122,7 +132,7 @@ export async function exportPng(
         throw new Error(`export root nicht gefunden: ${normalizeError(error).message}`);
       }
 
-      writeExportTabStatus(openedTab, 'Export-Root gefunden');
+      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.exportRootFound);
     } else {
       mountNode = document.createElement('div');
       mountNode.style.position = 'fixed';
@@ -137,7 +147,7 @@ export async function exportPng(
       iframe.style.height = `${height}px`;
       iframe.style.border = '0';
       mountNode.appendChild(iframe);
-      writeExportTabStatus(openedTab, 'iframe gefunden');
+      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.iframeFound);
 
       let exportDocument: Document;
       try {
@@ -147,7 +157,7 @@ export async function exportPng(
       }
 
       await waitForPreviewReady(exportDocument);
-      writeExportTabStatus(openedTab, 'Preview bereit');
+      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.previewReady);
 
       try {
         graphicRoot = getExportRoot(exportDocument);
@@ -155,11 +165,11 @@ export async function exportPng(
         throw new Error(`export root nicht gefunden: ${normalizeError(error).message}`);
       }
 
-      writeExportTabStatus(openedTab, 'Export-Root gefunden');
+      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.exportRootFound);
     }
 
     let canvas: HTMLCanvasElement;
-    writeExportTabStatus(openedTab, 'html2canvas gestartet');
+    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.html2canvasStarted);
     try {
       canvas = await html2canvas(graphicRoot, {
         width,
@@ -177,7 +187,7 @@ export async function exportPng(
       throw new Error(`html2canvas fehlgeschlagen: ${normalizeError(error).message}`);
     }
 
-    writeExportTabStatus(openedTab, 'Canvas erzeugt');
+    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.canvasCreated);
 
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob((result) => {
@@ -190,13 +200,13 @@ export async function exportPng(
       }, 'image/png');
     });
 
-    writeExportTabStatus(openedTab, 'Blob erzeugt');
+    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.blobCreated);
 
     const blobUrl = URL.createObjectURL(blob);
     window.setTimeout(() => URL.revokeObjectURL(blobUrl), BLOB_URL_REVOCATION_DELAY_MS);
 
     ensureOpenedTab(openedTab);
-    writeExportTabStatus(openedTab, 'Navigiere zum PNG');
+    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.navigatingToPng);
     openedTab.location.replace(blobUrl);
   } catch (error) {
     const normalizedError = normalizeError(error);
