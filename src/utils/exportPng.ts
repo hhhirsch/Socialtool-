@@ -45,16 +45,6 @@ function getExportRoot(container: ParentNode): HTMLElement {
   return exportRoot;
 }
 
-function waitForTimeout(delay: number): Promise<void> {
-  return new Promise((resolve) => {
-    window.setTimeout(resolve, delay);
-  });
-}
-
-async function waitForExportRenderSettled(): Promise<void> {
-  await waitForTimeout(EXPORT_RENDER_SETTLE_DELAY_MS);
-}
-
 function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
   return new Promise((resolve) => {
     canvas.toBlob(resolve, 'image/png');
@@ -111,7 +101,9 @@ export async function exportPng(
 
     reportExportStatus(PNG_EXPORT_STATUS.exportRootFound, onStatus);
     applyGeneralPostTitleFit(graphicRoot);
-    await waitForExportRenderSettled();
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, EXPORT_RENDER_SETTLE_DELAY_MS);
+    });
     let dataUrl: string | null = null;
     try {
       const canvas = await html2canvas(graphicRoot, {
@@ -146,7 +138,7 @@ export async function exportPng(
     }
 
     if (!dataUrl) {
-      throw new Error('PNG-Daten konnten nicht erzeugt werden.');
+      throw new Error('PNG-Daten konnten für den Desktop-Download nicht erzeugt werden.');
     }
 
     const link = document.createElement('a');
