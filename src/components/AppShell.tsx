@@ -76,15 +76,22 @@ export function AppShell() {
   );
 
   const handleExportPng = useCallback(async () => {
+    const openedTab = window.open('', '_blank');
+
     try {
       await exportPng(
         previewDocumentHtml,
         selectedPreset.width,
         selectedPreset.height,
         generateFilename(selectedPreset, selectedTemplate),
+        openedTab,
         previewFrameRef.current
       );
     } catch (exportError) {
+      if (openedTab && !openedTab.closed) {
+        openedTab.close();
+      }
+
       showError(
         `PNG-Export fehlgeschlagen: ${
           exportError instanceof Error ? exportError.message : 'Unbekannter Fehler'
