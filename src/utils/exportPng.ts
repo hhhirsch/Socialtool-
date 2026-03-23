@@ -12,6 +12,23 @@ function escapeHtml(value: string): string {
     .replaceAll("'", '&#39;');
 }
 
+function normalizeError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
+}
+
+function ensureOpenedTab(
+  openedTab: ReturnType<typeof window.open>,
+  message = 'Der geöffnete Export-Tab wurde bereits geschlossen.'
+): asserts openedTab is Window {
+  if (!openedTab) {
+    throw new Error(message);
+  }
+
+  if (openedTab.closed) {
+    throw new Error(message);
+  }
+}
+
 export function writeExportTabMessage(
   openedTab: ReturnType<typeof window.open>,
   title: string,
@@ -35,6 +52,21 @@ export function writeExportTabMessage(
   openedTab.document.close();
 }
 
+function writeExportTabError(openedTab: Window, error: Error): void {
+  openedTab.document.title = 'PNG-Export fehlgeschlagen';
+  openedTab.document.body.innerHTML = `
+    <div style="padding:24px;font-family:system-ui,sans-serif;background:#ffffff;color:#111827;">
+      <h1 style="margin:0 0 16px;font-size:24px;">PNG-Export fehlgeschlagen</h1>
+      <p style="margin:0 0 16px;font-size:16px;">${escapeHtml(error.message)}</p>
+      ${
+        error.stack
+          ? `<pre style="margin:0;padding:16px;overflow:auto;border:1px solid #d1d5db;border-radius:8px;background:#f3f4f6;font-size:13px;line-height:1.5;white-space:pre-wrap;">${escapeHtml(error.stack)}</pre>`
+          : ''
+      }
+    </div>
+  `;
+}
+
 /**
  * Exports the isolated graphic in its original preset resolution.
  */
@@ -55,15 +87,28 @@ export async function exportPng(
       );
     }
 
-    if (openedTab.closed) {
-      throw new Error('Der geöffnete Export-Tab wurde bereits geschlossen.');
-    }
+    ensureOpenedTab(openedTab);
 
     let graphicRoot: HTMLElement;
     if (liveFrame) {
-      const liveDocument = await waitForIframeDocument(liveFrame);
+      if (!document.body.contains(liveFrame)) {
+        throw new Error('iframe nicht gefunden.');
+      }
+
+      let liveDocument: Document;
+      try {
+        liveDocument = await waitForIframeDocument(liveFrame);
+      } catch (error) {
+        throw new Error(`iframe document nicht verfügbar: ${normalizeError(error).message}`);
+      }
+
       await waitForPreviewReady(liveDocument);
-      graphicRoot = getExportRoot(liveDocument);
+
+      try {
+        graphicRoot = getExportRoot(liveDocument);
+      } catch (error) {
+        throw new Error(`export root nicht gefunden: ${normalizeError(error).message}`);
+      }
     } else {
       mountNode = document.createElement('div');
       mountNode.style.position = 'fixed';
@@ -79,23 +124,39 @@ export async function exportPng(
       iframe.style.border = '0';
       mountNode.appendChild(iframe);
 
-      const exportDocument = await waitForIframeDocument(iframe, documentHtml);
+      let exportDocument: Document;
+      try {
+        exportDocument = await waitForIframeDocument(iframe, documentHtml);
+      } catch (error) {
+        throw new Error(`iframe document nicht verfügbar: ${normalizeError(error).message}`);
+      }
+
       await waitForPreviewReady(exportDocument);
-      graphicRoot = getExportRoot(exportDocument);
+
+      try {
+        graphicRoot = getExportRoot(exportDocument);
+      } catch (error) {
+        throw new Error(`export root nicht gefunden: ${normalizeError(error).message}`);
+      }
     }
 
-    const canvas = await html2canvas(graphicRoot, {
-      width,
-      height,
-      scale: 1,
-      backgroundColor: null,
-      allowTaint: false,
-      foreignObjectRendering: true,
-      useCORS: true,
-      logging: false,
-      windowWidth: width,
-      windowHeight: height,
-    });
+    let canvas: HTMLCanvasElement;
+    try {
+      canvas = await html2canvas(graphicRoot, {
+        width,
+        height,
+        scale: 1,
+        backgroundColor: null,
+        allowTaint: false,
+        foreignObjectRendering: true,
+        useCORS: true,
+        logging: false,
+        windowWidth: width,
+        windowHeight: height,
+      });
+    } catch (error) {
+      throw new Error(`html2canvas fehlgeschlagen: ${normalizeError(error).message}`);
+    }
 
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob((result) => {
@@ -104,27 +165,22 @@ export async function exportPng(
           return;
         }
 
-        reject(new Error('PNG-Datei konnte nicht erstellt werden.'));
+        reject(new Error('canvas.toBlob() hat kein PNG erzeugt.'));
       }, 'image/png');
     });
 
     const blobUrl = URL.createObjectURL(blob);
     window.setTimeout(() => URL.revokeObjectURL(blobUrl), BLOB_URL_REVOCATION_DELAY_MS);
 
-    if (openedTab.closed) {
-      throw new Error('Der geöffnete Export-Tab wurde bereits geschlossen.');
-    }
+    ensureOpenedTab(openedTab);
 
+    console.log('PNG blob erzeugt, navigiere zum Blob');
     openedTab.location.replace(blobUrl);
   } catch (error) {
-    const normalizedError = error instanceof Error ? error : new Error(String(error));
+    const normalizedError = normalizeError(error);
 
     if (openedTab && !openedTab.closed) {
-      try {
-        writeExportTabMessage(openedTab, 'PNG-Export fehlgeschlagen', normalizedError.message);
-      } catch {
-        openedTab.close();
-      }
+      writeExportTabError(openedTab, normalizedError);
     }
 
     throw normalizedError;
