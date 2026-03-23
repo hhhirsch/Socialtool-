@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useAppState } from '../hooks/useAppState';
-import { exportPng } from '../utils/exportPng';
+import { exportPng, writeExportTabMessage } from '../utils/exportPng';
 import { exportPdf } from '../utils/exportPdf';
 import { generateFilename } from '../utils/generateFilename';
 import { copySlideHtml } from '../utils/generateSlideHtml';
@@ -77,6 +77,13 @@ export function AppShell() {
 
   const handleExportPng = useCallback(async () => {
     const openedTab = window.open('', '_blank');
+    if (openedTab) {
+      try {
+        writeExportTabMessage(openedTab, 'PNG-Export', 'PNG wird vorbereitet...');
+      } catch {
+        openedTab.close();
+      }
+    }
 
     try {
       await exportPng(
@@ -88,10 +95,6 @@ export function AppShell() {
         previewFrameRef.current
       );
     } catch (exportError) {
-      if (openedTab && !openedTab.closed) {
-        openedTab.close();
-      }
-
       showError(
         `PNG-Export fehlgeschlagen: ${
           exportError instanceof Error ? exportError.message : 'Unbekannter Fehler'

@@ -3,6 +3,38 @@ import { getExportRoot, waitForIframeDocument, waitForPreviewReady } from './pre
 
 const BLOB_URL_REVOCATION_DELAY_MS = 10_000;
 
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+export function writeExportTabMessage(
+  openedTab: ReturnType<typeof window.open>,
+  title: string,
+  message: string
+): void {
+  if (!openedTab || openedTab.closed) {
+    return;
+  }
+
+  openedTab.document.open();
+  openedTab.document.write(`<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <title>${escapeHtml(title)}</title>
+  </head>
+  <body style="margin:0;padding:24px;font-family:system-ui,sans-serif;background:#ffffff;color:#111827;">
+    <p style="margin:0;font-size:16px;">${escapeHtml(message)}</p>
+  </body>
+</html>`);
+  openedTab.document.close();
+}
+
 /**
  * Exports the isolated graphic in its original preset resolution.
  */
@@ -17,6 +49,16 @@ export async function exportPng(
   let mountNode: HTMLDivElement | null = null;
 
   try {
+    if (!openedTab) {
+      throw new Error(
+        `PNG "${filename}.png" konnte nicht in neuem Tab geöffnet werden. Bitte Pop-up-Blocker prüfen.`
+      );
+    }
+
+    if (openedTab.closed) {
+      throw new Error('Der geöffnete Export-Tab wurde bereits geschlossen.');
+    }
+
     let graphicRoot: HTMLElement;
     if (liveFrame) {
       const liveDocument = await waitForIframeDocument(liveFrame);
@@ -69,15 +111,23 @@ export async function exportPng(
     const blobUrl = URL.createObjectURL(blob);
     window.setTimeout(() => URL.revokeObjectURL(blobUrl), BLOB_URL_REVOCATION_DELAY_MS);
 
-    if (!openedTab) {
-      throw new Error(
-        `PNG "${filename}.png" konnte nicht in neuem Tab geöffnet werden. Bitte Pop-up-Blocker prüfen.`
-      );
+    if (openedTab.closed) {
+      throw new Error('Der geöffnete Export-Tab wurde bereits geschlossen.');
     }
 
-    openedTab.location.href = blobUrl;
+    openedTab.location.replace(blobUrl);
   } catch (error) {
-    throw error instanceof Error ? error : new Error(String(error));
+    const normalizedError = error instanceof Error ? error : new Error(String(error));
+
+    if (openedTab && !openedTab.closed) {
+      try {
+        writeExportTabMessage(openedTab, 'PNG-Export fehlgeschlagen', normalizedError.message);
+      } catch {
+        openedTab.close();
+      }
+    }
+
+    throw normalizedError;
   } finally {
     mountNode?.remove();
   }
