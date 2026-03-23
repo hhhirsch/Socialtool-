@@ -2,19 +2,17 @@ import html2canvas from 'html2canvas';
 import { applyGeneralPostTitleFit } from '../lib/grafik-builder/useFitText';
 import { buildExportMarkup, EXPORT_ROOT_SELECTOR } from './previewDocument';
 
-const EXPORT_ASSET_TIMEOUT_MS = 150;
-const EXPORT_RENDER_DELAY_MS = 100;
+const EXPORT_RENDER_SETTLE_DELAY_MS = 75;
 const EXPORT_CONTAINER_ERROR = 'Export-Container konnte nicht erzeugt werden.';
 const PNG_EXPORT_STATUS = {
   preparing: 'PNG wird erstellt…',
   exportContainerCreated: 'Export-Container erstellt',
-  waitingForAssets: 'warte auf Fonts und Bilder',
-  assetsReady: 'Fonts und Bilder bereit',
   searchingExportRoot: 'suche Export-Root',
   exportRootFound: 'Export-Root gefunden',
   pngCreated: 'PNG erstellt',
   downloadStarted: 'Download gestartet',
   imageOpened: 'Bild öffnen und lange drücken zum Speichern',
+  imageOpenedSameTab: 'Popup blockiert — PNG wird im aktuellen Tab geöffnet',
   failed: 'Export fehlgeschlagen — bitte erneut versuchen',
 } as const;
 
@@ -40,51 +38,17 @@ function normalizeError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }
 
-export function writeExportTabMessage(
-  openedTab: ReturnType<typeof window.open>,
-  title: string,
-  message: string
-): void {
-  if (!openedTab || openedTab.closed) {
-    return;
-  }
-
-  openedTab.document.open();
-  openedTab.document.write(`<!DOCTYPE html>
-<html lang="de">
-  <head>
-    <meta charset="utf-8" />
-    <title>${escapeHtml(title)}</title>
-  </head>
-  <body style="margin:0;padding:24px;font-family:system-ui,sans-serif;background:#ffffff;color:#111827;">
-    <p style="margin:0;font-size:16px;">${escapeHtml(message)}</p>
-  </body>
-</html>`);
-  openedTab.document.close();
-}
-
-function writeExportTabStatus(openedTab: ReturnType<typeof window.open> | undefined, message: string): void {
-  if (!openedTab || openedTab.closed) {
-    return;
-  }
-
-  writeExportTabMessage(openedTab, 'PNG-Export', message);
-}
-
-function reportExportStatus(
-  message: string,
-  onStatus?: (message: string) => void,
-  openedTab?: ReturnType<typeof window.open>
-): void {
+function reportExportStatus(message: string, onStatus?: (message: string) => void): void {
   onStatus?.(message);
-  writeExportTabStatus(openedTab, message);
 }
 
 function getFilenameWithExtension(filename: string): string {
   return filename.endsWith('.png') ? filename : `${filename}.png`;
 }
 
-function openImageInTab(dataUrl: string, filename: string, openedTab?: ReturnType<typeof window.open>): void {
+function openImageInTab(dataUrl: string, filename: string): boolean {
+  const openedTab = window.open('', '_blank');
+
   if (openedTab && !openedTab.closed) {
     openedTab.document.open();
     openedTab.document.write(`<!DOCTYPE html>
@@ -100,28 +64,11 @@ function openImageInTab(dataUrl: string, filename: string, openedTab?: ReturnTyp
   </body>
 </html>`);
     openedTab.document.close();
-    return;
+    return true;
   }
 
-  const fallbackTab = window.open(dataUrl, '_blank');
-  if (!fallbackTab) {
-    window.location.href = dataUrl;
-  }
-}
-
-function writeExportTabError(openedTab: Window, error: Error): void {
-  openedTab.document.title = 'PNG-Export fehlgeschlagen';
-  openedTab.document.body.innerHTML = `
-    <div style="padding:24px;font-family:system-ui,sans-serif;background:#ffffff;color:#111827;">
-      <h1 style="margin:0 0 16px;font-size:24px;">PNG-Export fehlgeschlagen</h1>
-      <p style="margin:0 0 16px;font-size:16px;">${escapeHtml(error.message)}</p>
-      ${
-        error.stack
-          ? `<pre style="margin:0;padding:16px;overflow:auto;border:1px solid #d1d5db;border-radius:8px;background:#f3f4f6;font-size:13px;line-height:1.5;white-space:pre-wrap;">${escapeHtml(error.stack)}</pre>`
-          : ''
-      }
-    </div>
-  `;
+  window.location.href = dataUrl;
+  return false;
 }
 
 function getExportRoot(container: ParentNode): HTMLElement {
@@ -145,69 +92,9 @@ function waitForAnimationFrame(): Promise<void> {
   });
 }
 
-function waitForImageBestEffort(image: HTMLImageElement): Promise<void> {
-  if (image.complete) {
-    return Promise.resolve();
-  }
-
-  return new Promise((resolve) => {
-    const timeoutState: { current?: number } = {};
-    let settled = false;
-
-    const finalize = (): void => {
-      if (settled) {
-        return;
-      }
-
-      settled = true;
-
-      if (timeoutState.current !== undefined) {
-        window.clearTimeout(timeoutState.current);
-      }
-
-      image.removeEventListener('load', finalize);
-      image.removeEventListener('error', finalize);
-      resolve();
-    };
-
-    image.addEventListener('load', finalize);
-    image.addEventListener('error', finalize);
-    timeoutState.current = window.setTimeout(finalize, EXPORT_ASSET_TIMEOUT_MS);
-  });
-}
-function waitForFontsBestEffort(): Promise<void> {
-  const fontsApi = (document as Document & {
-    fonts?: { ready?: Promise<unknown> };
-  }).fonts;
-
-  if (!fontsApi?.ready) {
-    return Promise.resolve();
-  }
-
-  return new Promise((resolve) => {
-    let settled = false;
-
-    const finalize = (): void => {
-      if (settled) {
-        return;
-      }
-      settled = true;
-      resolve();
-    };
-
-    fontsApi.ready.then(finalize).catch(finalize);
-    window.setTimeout(finalize, EXPORT_ASSET_TIMEOUT_MS);
-  });
-}
-
-async function waitForExportAssetsBestEffort(container: HTMLElement): Promise<void> {
+async function waitForExportRenderSettled(): Promise<void> {
   await waitForAnimationFrame();
-  await waitForTimeout(EXPORT_RENDER_DELAY_MS);
-
-  await Promise.all([
-    waitForFontsBestEffort(),
-    Promise.all(Array.from(container.querySelectorAll('img')).map((image) => waitForImageBestEffort(image))),
-  ]);
+  await waitForTimeout(EXPORT_RENDER_SETTLE_DELAY_MS);
 }
 
 /**
@@ -219,17 +106,15 @@ export async function exportPng(
   width: number,
   height: number,
   filename: string,
-  onStatus?: (message: string) => void,
-  openedTab?: ReturnType<typeof window.open>
+  onStatus?: (message: string) => void
 ): Promise<void> {
   let mountNode: HTMLDivElement | null = null;
   const ios = isIOSWebKit();
-  const effectiveOpenedTab = openedTab ?? (ios ? window.open('', '_blank') : null);
 
   try {
     const filenameWithExtension = getFilenameWithExtension(filename);
 
-    reportExportStatus(PNG_EXPORT_STATUS.preparing, onStatus, effectiveOpenedTab);
+    reportExportStatus(PNG_EXPORT_STATUS.preparing, onStatus);
 
     const { markup, styles } = buildExportMarkup(html, css, width, height);
 
@@ -250,22 +135,19 @@ export async function exportPng(
 
     document.body.appendChild(mountNode);
 
-    reportExportStatus(PNG_EXPORT_STATUS.exportContainerCreated, onStatus, effectiveOpenedTab);
+    reportExportStatus(PNG_EXPORT_STATUS.exportContainerCreated, onStatus);
 
     if (!mountNode.isConnected) {
       throw new Error(EXPORT_CONTAINER_ERROR);
     }
 
-    reportExportStatus(PNG_EXPORT_STATUS.searchingExportRoot, onStatus, effectiveOpenedTab);
+    reportExportStatus(PNG_EXPORT_STATUS.searchingExportRoot, onStatus);
 
     const graphicRoot = getExportRoot(mountNode);
 
-    reportExportStatus(PNG_EXPORT_STATUS.exportRootFound, onStatus, effectiveOpenedTab);
-    reportExportStatus(PNG_EXPORT_STATUS.waitingForAssets, onStatus, effectiveOpenedTab);
-    await waitForExportAssetsBestEffort(mountNode);
+    reportExportStatus(PNG_EXPORT_STATUS.exportRootFound, onStatus);
     applyGeneralPostTitleFit(graphicRoot);
-    await waitForAnimationFrame();
-    reportExportStatus(PNG_EXPORT_STATUS.assetsReady, onStatus, effectiveOpenedTab);
+    await waitForExportRenderSettled();
     let dataUrl: string;
     try {
       const canvas = await html2canvas(graphicRoot, {
@@ -282,11 +164,14 @@ export async function exportPng(
       throw new Error(`html2canvas fehlgeschlagen: ${normalizeError(error).message}`);
     }
 
-    reportExportStatus(PNG_EXPORT_STATUS.pngCreated, onStatus, effectiveOpenedTab);
+    reportExportStatus(PNG_EXPORT_STATUS.pngCreated, onStatus);
 
     if (ios) {
-      reportExportStatus(PNG_EXPORT_STATUS.imageOpened, onStatus, effectiveOpenedTab);
-      openImageInTab(dataUrl, filenameWithExtension, effectiveOpenedTab);
+      const openedInNewTab = openImageInTab(dataUrl, filenameWithExtension);
+      reportExportStatus(
+        openedInNewTab ? PNG_EXPORT_STATUS.imageOpened : PNG_EXPORT_STATUS.imageOpenedSameTab,
+        onStatus
+      );
       return;
     }
 
@@ -297,15 +182,10 @@ export async function exportPng(
     document.body.appendChild(link);
     link.click();
     link.remove();
-    reportExportStatus(PNG_EXPORT_STATUS.downloadStarted, onStatus, effectiveOpenedTab);
+    reportExportStatus(PNG_EXPORT_STATUS.downloadStarted, onStatus);
   } catch (error) {
     const normalizedError = normalizeError(error);
     onStatus?.(PNG_EXPORT_STATUS.failed);
-
-    if (effectiveOpenedTab && !effectiveOpenedTab.closed) {
-      writeExportTabError(effectiveOpenedTab, normalizedError);
-    }
-
     throw normalizedError;
   } finally {
     mountNode?.remove();
