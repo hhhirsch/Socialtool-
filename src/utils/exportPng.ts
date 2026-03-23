@@ -4,6 +4,7 @@ import { buildExportMarkup, EXPORT_ROOT_SELECTOR } from './previewDocument';
 const BLOB_URL_REVOCATION_DELAY_MS = 10_000;
 const EXPORT_ASSET_TIMEOUT_MS = 1_000;
 const EXPORT_RENDER_DELAY_MS = 100;
+const EXPORT_CONTAINER_ERROR = 'Export-Container konnte nicht erzeugt werden.';
 const PNG_EXPORT_STATUS = {
   preparing: 'PNG wird vorbereitet...',
   exportContainerCreated: 'Export-Container erstellt',
@@ -92,7 +93,7 @@ function writeExportTabError(openedTab: Window, error: Error): void {
 function getExportRoot(container: ParentNode): HTMLElement {
   const exportRoot = container.querySelector(EXPORT_ROOT_SELECTOR);
   if (!(exportRoot instanceof HTMLElement)) {
-    throw new Error('Export-Root fehlt.');
+    throw new Error('Export-Root fehlt: Grafikinhalt für den Export wurde nicht gefunden.');
   }
 
   return exportRoot;
@@ -116,13 +117,14 @@ function waitForImageBestEffort(image: HTMLImageElement): Promise<void> {
   }
 
   return new Promise((resolve) => {
+    let timeoutId = 0;
     const finalize = (): void => {
       window.clearTimeout(timeoutId);
       image.removeEventListener('load', finalize);
       image.removeEventListener('error', finalize);
       resolve();
     };
-    const timeoutId = window.setTimeout(finalize, EXPORT_ASSET_TIMEOUT_MS);
+    timeoutId = window.setTimeout(finalize, EXPORT_ASSET_TIMEOUT_MS);
 
     image.addEventListener('load', finalize, { once: true });
     image.addEventListener('error', finalize, { once: true });
@@ -183,7 +185,7 @@ export async function exportPng(
     mountNode.innerHTML = `<style>${styles}</style>${markup}`;
 
     if (!(document.body instanceof HTMLBodyElement)) {
-      throw new Error('Export-Container konnte nicht erzeugt werden.');
+      throw new Error(EXPORT_CONTAINER_ERROR);
     }
 
     document.body.appendChild(mountNode);
@@ -191,7 +193,7 @@ export async function exportPng(
     writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.exportContainerCreated);
 
     if (!mountNode.isConnected) {
-      throw new Error('Export-Container konnte nicht erzeugt werden.');
+      throw new Error(EXPORT_CONTAINER_ERROR);
     }
 
     writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.searchingExportRoot);
