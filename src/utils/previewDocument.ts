@@ -63,6 +63,8 @@ function scopeGraphicSelector(selector: string, scope: string): string {
 }
 
 function scopeGraphicStyles(css: string, scope: string): string {
+  // Scope plain top-level selector blocks to the export root while leaving
+  // at-rules like @import untouched. Template CSS only uses flat rules here.
   return css.replace(/(^|}|;)\s*([^@{}][^{}]*)\{/g, (_match, boundary: string, selectors: string) => {
     const scopedSelectors = selectors
       .split(',')

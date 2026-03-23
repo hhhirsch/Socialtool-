@@ -2,6 +2,7 @@ import html2canvas from 'html2canvas';
 import { buildExportMarkup, EXPORT_ROOT_SELECTOR } from './previewDocument';
 
 const BLOB_URL_REVOCATION_DELAY_MS = 10_000;
+const EXPORT_ASSET_TIMEOUT_MS = 5_000;
 const PREVIEW_READY_TIMEOUT_MS = 15_000;
 const PREVIEW_READY_TIMEOUT_ERROR = 'Export-Inhalt konnte nicht rechtzeitig vorbereitet werden.';
 const PNG_EXPORT_STATUS = {
@@ -99,12 +100,11 @@ function getExportRoot(container: ParentNode): HTMLElement {
 }
 
 async function waitForExportAssets(container: HTMLElement): Promise<void> {
-  const FONT_READY_TIMEOUT_MS = 5_000;
   const fontReady =
     'fonts' in document
       ? (Promise.race([
           document.fonts.ready,
-          new Promise((resolve) => window.setTimeout(resolve, FONT_READY_TIMEOUT_MS)),
+          new Promise((resolve) => window.setTimeout(resolve, EXPORT_ASSET_TIMEOUT_MS)),
         ]).catch(() => undefined) as Promise<unknown>)
       : Promise.resolve();
   const images = Array.from(container.querySelectorAll('img'));
@@ -122,6 +122,8 @@ async function waitForExportAssets(container: HTMLElement): Promise<void> {
   ]);
 
   await new Promise<void>((resolve) => {
+    // Give browsers a short settling window so imported fonts, image metrics and
+    // layout-dependent styles are reflected before html2canvas reads the DOM.
     window.setTimeout(() => {
       window.requestAnimationFrame(() => window.requestAnimationFrame(() => resolve()));
     }, 50);
