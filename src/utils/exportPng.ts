@@ -1,22 +1,31 @@
-import html2canvas from 'html2canvas';
+import { getFontEmbedCSS, toPng } from 'html-to-image';
 import { buildExportMarkup, EXPORT_ROOT_SELECTOR } from './previewDocument';
 
-const BLOB_URL_REVOCATION_DELAY_MS = 10_000;
 const EXPORT_ASSET_TIMEOUT_MS = 1_000;
 const EXPORT_RENDER_DELAY_MS = 100;
 const EXPORT_CONTAINER_ERROR = 'Export-Container konnte nicht erzeugt werden.';
 const PNG_EXPORT_STATUS = {
-  preparing: 'PNG wird vorbereitet...',
+  preparing: 'PNG wird erstellt…',
   exportContainerCreated: 'Export-Container erstellt',
   waitingForAssets: 'warte auf Fonts und Bilder',
   assetsReady: 'Fonts und Bilder bereit',
   searchingExportRoot: 'suche Export-Root',
   exportRootFound: 'Export-Root gefunden',
-  html2canvasStarted: 'html2canvas gestartet',
-  canvasCreated: 'Canvas erzeugt',
-  blobCreated: 'Blob erzeugt',
-  navigatingToPng: 'Navigiere zum PNG',
+  embeddingFonts: 'Schriften werden eingebettet',
+  pngCreated: 'PNG erstellt',
+  downloadStarted: 'Download gestartet',
+  imageOpened: 'Bild öffnen und lange drücken zum Speichern',
+  failed: 'Export fehlgeschlagen — bitte erneut versuchen',
 } as const;
+
+const EXPORT_PIXEL_RATIO = 2;
+
+export function isIOSWebKit(): boolean {
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
+}
 
 function escapeHtml(value: string): string {
   return value
@@ -29,19 +38,6 @@ function escapeHtml(value: string): string {
 
 function normalizeError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
-}
-
-function ensureOpenedTab(
-  openedTab: ReturnType<typeof window.open>,
-  message = 'Der geöffnete PNG-Export-Tab ist nicht verfügbar oder wurde geschlossen.'
-): asserts openedTab is Window {
-  if (!openedTab) {
-    throw new Error(message);
-  }
-
-  if (openedTab.closed) {
-    throw new Error(message);
-  }
 }
 
 export function writeExportTabMessage(
@@ -67,12 +63,61 @@ export function writeExportTabMessage(
   openedTab.document.close();
 }
 
-function writeExportTabStatus(
-  openedTab: ReturnType<typeof window.open>,
-  message: string
-): void {
-  ensureOpenedTab(openedTab);
+function writeExportTabStatus(openedTab: ReturnType<typeof window.open> | undefined, message: string): void {
+  if (!openedTab || openedTab.closed) {
+    return;
+  }
+
   writeExportTabMessage(openedTab, 'PNG-Export', message);
+}
+
+function reportExportStatus(
+  message: string,
+  onStatus?: (message: string) => void,
+  openedTab?: ReturnType<typeof window.open>
+): void {
+  onStatus?.(message);
+  writeExportTabStatus(openedTab, message);
+}
+
+function getFilenameWithExtension(filename: string): string {
+  return filename.endsWith('.png') ? filename : `${filename}.png`;
+}
+
+async function getFontEmbedCssBestEffort(exportRoot: HTMLElement): Promise<string> {
+  try {
+    return await getFontEmbedCSS(exportRoot, {
+      includeQueryParams: true,
+      preferredFontFormat: 'woff2',
+    });
+  } catch {
+    return '';
+  }
+}
+
+function openImageInTab(dataUrl: string, filename: string, openedTab?: ReturnType<typeof window.open>): void {
+  if (openedTab && !openedTab.closed) {
+    openedTab.document.open();
+    openedTab.document.write(`<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${escapeHtml(filename)}</title>
+  </head>
+  <body style="margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;color:#fff;font-family:system-ui,sans-serif;">
+    <p style="margin:0;padding:16px;font-size:14px;text-align:center;opacity:0.8;">Bild lange drücken → „Bild sichern“</p>
+    <img src="${dataUrl}" alt="${escapeHtml(filename)}" style="display:block;max-width:100%;height:auto;" />
+  </body>
+</html>`);
+    openedTab.document.close();
+    return;
+  }
+
+  const fallbackTab = window.open(dataUrl, '_blank');
+  if (!fallbackTab) {
+    window.location.href = dataUrl;
+  }
 }
 
 function writeExportTabError(openedTab: Window, error: Error): void {
@@ -173,19 +218,16 @@ export async function exportPng(
   width: number,
   height: number,
   filename: string,
-  openedTab: ReturnType<typeof window.open>
+  onStatus?: (message: string) => void,
+  openedTab?: ReturnType<typeof window.open>
 ): Promise<void> {
   let mountNode: HTMLDivElement | null = null;
 
   try {
-    if (!openedTab) {
-      throw new Error(
-        `PNG "${filename}.png" konnte nicht in neuem Tab geöffnet werden. Bitte Pop-up-Blocker prüfen.`
-      );
-    }
+    const filenameWithExtension = getFilenameWithExtension(filename);
+    const ios = isIOSWebKit();
 
-    ensureOpenedTab(openedTab);
-    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.preparing);
+    reportExportStatus(PNG_EXPORT_STATUS.preparing, onStatus, openedTab);
 
     const { markup, styles } = buildExportMarkup(html, css, width, height);
 
@@ -206,63 +248,64 @@ export async function exportPng(
 
     document.body.appendChild(mountNode);
 
-    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.exportContainerCreated);
+    reportExportStatus(PNG_EXPORT_STATUS.exportContainerCreated, onStatus, openedTab);
 
     if (!mountNode.isConnected) {
       throw new Error(EXPORT_CONTAINER_ERROR);
     }
 
-    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.searchingExportRoot);
+    reportExportStatus(PNG_EXPORT_STATUS.searchingExportRoot, onStatus, openedTab);
 
     const graphicRoot = getExportRoot(mountNode);
 
-    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.exportRootFound);
-    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.waitingForAssets);
+    reportExportStatus(PNG_EXPORT_STATUS.exportRootFound, onStatus, openedTab);
+    reportExportStatus(PNG_EXPORT_STATUS.waitingForAssets, onStatus, openedTab);
     await waitForExportAssetsBestEffort(mountNode);
-    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.assetsReady);
+    reportExportStatus(PNG_EXPORT_STATUS.assetsReady, onStatus, openedTab);
+    reportExportStatus(PNG_EXPORT_STATUS.embeddingFonts, onStatus, openedTab);
 
-    let canvas: HTMLCanvasElement;
-    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.html2canvasStarted);
+    const fontEmbedCSS = await getFontEmbedCssBestEffort(graphicRoot);
+
+    let dataUrl: string;
     try {
-      canvas = await html2canvas(graphicRoot, {
+      dataUrl = await toPng(graphicRoot, {
         width,
         height,
-        scale: 1,
-        backgroundColor: null,
-        allowTaint: false,
-        foreignObjectRendering: true,
-        useCORS: true,
-        logging: false,
-        windowWidth: width,
-        windowHeight: height,
+        pixelRatio: EXPORT_PIXEL_RATIO,
+        includeQueryParams: true,
+        cacheBust: true,
+        preferredFontFormat: 'woff2',
+        fontEmbedCSS: fontEmbedCSS || undefined,
+        style: {
+          width: `${width}px`,
+          height: `${height}px`,
+          transform: 'scale(1)',
+          transformOrigin: 'top left',
+        },
       });
     } catch (error) {
-      throw new Error(`html2canvas fehlgeschlagen: ${normalizeError(error).message}`);
+      throw new Error(`html-to-image fehlgeschlagen: ${normalizeError(error).message}`);
     }
 
-    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.canvasCreated);
+    reportExportStatus(PNG_EXPORT_STATUS.pngCreated, onStatus, openedTab);
 
-    const blob = await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob((result) => {
-        if (result) {
-          resolve(result);
-          return;
-        }
+    if (ios) {
+      reportExportStatus(PNG_EXPORT_STATUS.imageOpened, onStatus, openedTab);
+      openImageInTab(dataUrl, filenameWithExtension, openedTab);
+      return;
+    }
 
-        reject(new Error('canvas.toBlob() hat kein PNG erzeugt.'));
-      }, 'image/png');
-    });
-
-    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.blobCreated);
-
-    const blobUrl = URL.createObjectURL(blob);
-    window.setTimeout(() => URL.revokeObjectURL(blobUrl), BLOB_URL_REVOCATION_DELAY_MS);
-
-    ensureOpenedTab(openedTab);
-    writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.navigatingToPng);
-    openedTab.location.replace(blobUrl);
+    const link = document.createElement('a');
+    link.href = dataUrl;
+    link.download = filenameWithExtension;
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    reportExportStatus(PNG_EXPORT_STATUS.downloadStarted, onStatus, openedTab);
   } catch (error) {
     const normalizedError = normalizeError(error);
+    onStatus?.(PNG_EXPORT_STATUS.failed);
 
     if (openedTab && !openedTab.closed) {
       writeExportTabError(openedTab, normalizedError);
