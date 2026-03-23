@@ -11,8 +11,7 @@ const PNG_EXPORT_STATUS = {
   exportRootFound: 'Export-Root gefunden',
   pngCreated: 'PNG erstellt',
   downloadStarted: 'Download gestartet',
-  imageOpened: 'Bild öffnen und lange drücken zum Speichern',
-  imageOpenedSameTab: 'Popup blockiert — PNG wird im aktuellen Tab geöffnet',
+  imageOpened: 'PNG wird im aktuellen Tab geöffnet',
   failed: 'Export fehlgeschlagen — bitte erneut versuchen',
 } as const;
 
@@ -25,15 +24,6 @@ export function isIOSWebKit(): boolean {
   );
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
-}
-
 function normalizeError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }
@@ -44,31 +34,6 @@ function reportExportStatus(message: string, onStatus?: (message: string) => voi
 
 function getFilenameWithExtension(filename: string): string {
   return filename.endsWith('.png') ? filename : `${filename}.png`;
-}
-
-function openImageInTab(dataUrl: string, filename: string): boolean {
-  const openedTab = window.open('', '_blank');
-
-  if (openedTab && !openedTab.closed) {
-    openedTab.document.open();
-    openedTab.document.write(`<!DOCTYPE html>
-<html lang="de">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>${escapeHtml(filename)}</title>
-  </head>
-  <body style="margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000;color:#fff;font-family:system-ui,sans-serif;">
-    <p style="margin:0;padding:16px;font-size:14px;text-align:center;opacity:0.8;">Bild lange drücken → „Bild sichern“</p>
-    <img src="${dataUrl}" alt="${escapeHtml(filename)}" style="display:block;max-width:100%;height:auto;" />
-  </body>
-</html>`);
-    openedTab.document.close();
-    return true;
-  }
-
-  window.location.href = dataUrl;
-  return false;
 }
 
 function getExportRoot(container: ParentNode): HTMLElement {
@@ -86,15 +51,14 @@ function waitForTimeout(delay: number): Promise<void> {
   });
 }
 
-function waitForAnimationFrame(): Promise<void> {
-  return new Promise((resolve) => {
-    window.requestAnimationFrame(() => resolve());
-  });
+async function waitForExportRenderSettled(): Promise<void> {
+  await waitForTimeout(EXPORT_RENDER_SETTLE_DELAY_MS);
 }
 
-async function waitForExportRenderSettled(): Promise<void> {
-  await waitForAnimationFrame();
-  await waitForTimeout(EXPORT_RENDER_SETTLE_DELAY_MS);
+function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    canvas.toBlob(resolve, 'image/png');
+  });
 }
 
 /**
@@ -148,7 +112,7 @@ export async function exportPng(
     reportExportStatus(PNG_EXPORT_STATUS.exportRootFound, onStatus);
     applyGeneralPostTitleFit(graphicRoot);
     await waitForExportRenderSettled();
-    let dataUrl: string;
+    let dataUrl: string | null = null;
     try {
       const canvas = await html2canvas(graphicRoot, {
         width,
@@ -159,7 +123,17 @@ export async function exportPng(
         backgroundColor: null,
         logging: false,
       });
-      dataUrl = canvas.toDataURL('image/png');
+      if (ios) {
+        const pngBlob = await canvasToBlob(canvas);
+        if (pngBlob) {
+          window.location.href = URL.createObjectURL(pngBlob);
+        } else {
+          dataUrl = canvas.toDataURL('image/png');
+          window.location.href = dataUrl;
+        }
+      } else {
+        dataUrl = canvas.toDataURL('image/png');
+      }
     } catch (error) {
       throw new Error(`html2canvas fehlgeschlagen: ${normalizeError(error).message}`);
     }
@@ -167,12 +141,12 @@ export async function exportPng(
     reportExportStatus(PNG_EXPORT_STATUS.pngCreated, onStatus);
 
     if (ios) {
-      const openedInNewTab = openImageInTab(dataUrl, filenameWithExtension);
-      reportExportStatus(
-        openedInNewTab ? PNG_EXPORT_STATUS.imageOpened : PNG_EXPORT_STATUS.imageOpenedSameTab,
-        onStatus
-      );
+      reportExportStatus(PNG_EXPORT_STATUS.imageOpened, onStatus);
       return;
+    }
+
+    if (!dataUrl) {
+      throw new Error('PNG-Daten konnten nicht erzeugt werden.');
     }
 
     const link = document.createElement('a');
