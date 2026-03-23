@@ -268,21 +268,23 @@ export async function exportPng(
 
     let dataUrl: string;
     try {
-      dataUrl = await toPng(graphicRoot, {
+      const exportOptions = {
         width,
         height,
         pixelRatio: EXPORT_PIXEL_RATIO,
         includeQueryParams: true,
         cacheBust: true,
         preferredFontFormat: 'woff2',
-        fontEmbedCSS: fontEmbedCSS || undefined,
         style: {
           width: `${width}px`,
           height: `${height}px`,
           transform: 'scale(1)',
           transformOrigin: 'top left',
         },
-      });
+        ...(fontEmbedCSS ? { fontEmbedCSS } : {}),
+      };
+
+      dataUrl = await toPng(graphicRoot, exportOptions);
     } catch (error) {
       throw new Error(`html-to-image fehlgeschlagen: ${normalizeError(error).message}`);
     }

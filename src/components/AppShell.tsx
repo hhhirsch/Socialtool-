@@ -18,6 +18,8 @@ import { TemplateSelector } from './TemplateSelector';
 import { ToastMessage } from './ToastMessage';
 import styles from './AppShell.module.css';
 
+const EXPORT_STATUS_DISPLAY_DURATION_MS = 4_000;
+
 export function AppShell() {
   const templates = useMemo(() => getTemplates(), []);
   const previewFrameRef = useRef<HTMLIFrameElement>(null);
@@ -83,7 +85,7 @@ export function AppShell() {
     setExportStatus('PNG wird erstellt…');
 
     const openedTab = isIOS ? window.open('', '_blank') : null;
-    if (isIOS && openedTab) {
+    if (openedTab) {
       try {
         writeExportTabMessage(openedTab, 'PNG-Export', 'PNG wird erstellt…');
       } catch {
@@ -109,7 +111,7 @@ export function AppShell() {
       );
     } finally {
       setIsExporting(false);
-      window.setTimeout(() => setExportStatus(null), 4000);
+      window.setTimeout(() => setExportStatus(null), EXPORT_STATUS_DISPLAY_DURATION_MS);
     }
   }, [isIOS, renderedHtml, selectedPreset, selectedTemplate, showError]);
 
