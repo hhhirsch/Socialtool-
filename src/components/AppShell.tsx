@@ -87,12 +87,12 @@ export function AppShell() {
 
     try {
       await exportPng(
-        previewDocumentHtml,
+        renderedHtml,
+        selectedTemplate.css,
         selectedPreset.width,
         selectedPreset.height,
         generateFilename(selectedPreset, selectedTemplate),
-        openedTab,
-        previewFrameRef.current
+        openedTab
       );
     } catch (exportError) {
       showError(
@@ -101,7 +101,7 @@ export function AppShell() {
         }`
       );
     }
-  }, [previewDocumentHtml, selectedPreset, selectedTemplate, showError]);
+  }, [renderedHtml, selectedPreset, selectedTemplate, showError]);
 
   const handleCopyHtml = useCallback(async () => {
     try {
