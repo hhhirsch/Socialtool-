@@ -148,17 +148,7 @@ function waitForAnimationFrame(): Promise<void> {
 async function waitForExportAssetsBestEffort(_container: HTMLElement): Promise<void> {
   await new Promise((resolve) => window.setTimeout(resolve, 100));
 }
-  if (!('fonts' in document)) {
-    return;
-  }
-  if (isIOSWebKit()) return;
 
-  try {
-    await Promise.race([document.fonts.ready, waitForTimeout(EXPORT_ASSET_TIMEOUT_MS)]);
-  } catch {
-    // Best effort only.
-  }
-}
 
 function waitForImageBestEffort(image: HTMLImageElement): Promise<void> {
   if (image.complete) {
