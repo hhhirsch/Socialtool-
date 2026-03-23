@@ -12,7 +12,7 @@ function escapeHtml(value: string): string {
     .replaceAll("'", '&#39;');
 }
 
-function writeOpenedTabMessage(
+export function writeExportTabMessage(
   openedTab: ReturnType<typeof window.open>,
   title: string,
   message: string
@@ -121,7 +121,7 @@ export async function exportPng(
 
     if (openedTab && !openedTab.closed) {
       try {
-        writeOpenedTabMessage(openedTab, 'PNG-Export fehlgeschlagen', normalizedError.message);
+        writeExportTabMessage(openedTab, 'PNG-Export fehlgeschlagen', normalizedError.message);
       } catch {
         openedTab.close();
       }

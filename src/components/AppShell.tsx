@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useAppState } from '../hooks/useAppState';
-import { exportPng } from '../utils/exportPng';
+import { exportPng, writeExportTabMessage } from '../utils/exportPng';
 import { exportPdf } from '../utils/exportPdf';
 import { generateFilename } from '../utils/generateFilename';
 import { copySlideHtml } from '../utils/generateSlideHtml';
@@ -79,17 +79,7 @@ export function AppShell() {
     const openedTab = window.open('', '_blank');
     if (openedTab) {
       try {
-        openedTab.document.write(`<!DOCTYPE html>
-<html lang="de">
-  <head>
-    <meta charset="utf-8" />
-    <title>PNG-Export</title>
-  </head>
-  <body style="margin:0;padding:24px;font-family:system-ui,sans-serif;background:#ffffff;color:#111827;">
-    <p style="margin:0;font-size:16px;">PNG wird vorbereitet...</p>
-  </body>
-</html>`);
-        openedTab.document.close();
+        writeExportTabMessage(openedTab, 'PNG-Export', 'PNG wird vorbereitet...');
       } catch {
         openedTab.close();
       }
