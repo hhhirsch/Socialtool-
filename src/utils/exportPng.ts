@@ -1,4 +1,4 @@
-import { toPng } from 'html-to-image';
+import html2canvas from 'html2canvas';
 import { buildExportMarkup, EXPORT_ROOT_SELECTOR } from './previewDocument';
 
 const EXPORT_ASSET_TIMEOUT_MS = 1_000;
@@ -253,25 +253,18 @@ export async function exportPng(
     reportExportStatus(PNG_EXPORT_STATUS.assetsReady, onStatus, effectiveOpenedTab);
     let dataUrl: string;
     try {
-      const exportOptions = {
+      const canvas = await html2canvas(graphicRoot, {
         width,
         height,
-        pixelRatio: EXPORT_PIXEL_RATIO,
-        includeQueryParams: true,
-        cacheBust: true,
-        preferredFontFormat: 'woff2',
-        skipFonts: true,
-        style: {
-          width: `${width}px`,
-          height: `${height}px`,
-          transform: 'scale(1)',
-          transformOrigin: 'top left',
-        },
-      };
-
-      dataUrl = await toPng(graphicRoot, exportOptions);
+        scale: EXPORT_PIXEL_RATIO,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: null,
+        logging: false,
+      });
+      dataUrl = canvas.toDataURL('image/png');
     } catch (error) {
-      throw new Error(`html-to-image fehlgeschlagen: ${normalizeError(error).message}`);
+      throw new Error(`html2canvas fehlgeschlagen: ${normalizeError(error).message}`);
     }
 
     reportExportStatus(PNG_EXPORT_STATUS.pngCreated, onStatus, effectiveOpenedTab);
