@@ -1,4 +1,4 @@
-import { getFontEmbedCSS, toPng } from 'html-to-image';
+import { toPng } from 'html-to-image';
 import { buildExportMarkup, EXPORT_ROOT_SELECTOR } from './previewDocument';
 
 const EXPORT_ASSET_TIMEOUT_MS = 1_000;
@@ -11,7 +11,6 @@ const PNG_EXPORT_STATUS = {
   assetsReady: 'Fonts und Bilder bereit',
   searchingExportRoot: 'suche Export-Root',
   exportRootFound: 'Export-Root gefunden',
-  embeddingFonts: 'Schriften werden eingebettet',
   pngCreated: 'PNG erstellt',
   downloadStarted: 'Download gestartet',
   imageOpened: 'Bild öffnen und lange drücken zum Speichern',
@@ -82,17 +81,6 @@ function reportExportStatus(
 
 function getFilenameWithExtension(filename: string): string {
   return filename.endsWith('.png') ? filename : `${filename}.png`;
-}
-
-async function getFontEmbedCssBestEffort(exportRoot: HTMLElement): Promise<string> {
-  try {
-    return await getFontEmbedCSS(exportRoot, {
-      includeQueryParams: true,
-      preferredFontFormat: 'woff2',
-    });
-  } catch {
-    return '';
-  }
 }
 
 function openImageInTab(dataUrl: string, filename: string, openedTab?: ReturnType<typeof window.open>): void {
@@ -262,10 +250,6 @@ export async function exportPng(
     reportExportStatus(PNG_EXPORT_STATUS.waitingForAssets, onStatus, openedTab);
     await waitForExportAssetsBestEffort(mountNode);
     reportExportStatus(PNG_EXPORT_STATUS.assetsReady, onStatus, openedTab);
-    reportExportStatus(PNG_EXPORT_STATUS.embeddingFonts, onStatus, openedTab);
-
-    const fontEmbedCSS = await getFontEmbedCssBestEffort(graphicRoot);
-
     let dataUrl: string;
     try {
       const exportOptions = {
@@ -275,13 +259,13 @@ export async function exportPng(
         includeQueryParams: true,
         cacheBust: true,
         preferredFontFormat: 'woff2',
+        skipFonts: true,
         style: {
           width: `${width}px`,
           height: `${height}px`,
           transform: 'scale(1)',
           transformOrigin: 'top left',
         },
-        ...(fontEmbedCSS ? { fontEmbedCSS } : {}),
       };
 
       dataUrl = await toPng(graphicRoot, exportOptions);
