@@ -4,6 +4,7 @@ import {
   waitForPreviewReady,
   withPrintStyles,
 } from './previewExport';
+import { applyGeneralPostTitleFit } from '../lib/grafik-builder/useFitText';
 
 /**
  * Uses a print-optimized popup so only the current graphic is exported to PDF.
@@ -25,6 +26,7 @@ export async function exportPdf(
   if (liveFrame) {
     const liveDocument = await waitForIframeDocument(liveFrame);
     await waitForPreviewReady(liveDocument);
+    applyGeneralPostTitleFit(liveDocument);
     exportDocumentHtml = serializePreviewDocument(liveDocument);
   }
 

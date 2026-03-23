@@ -70,6 +70,7 @@ export const generalPostTemplate: GraphicTemplate = {
       font-family: 'Instrument Serif', serif;
       font-size: 88px; line-height: 1.05;
       color: var(--text); letter-spacing: -2px;
+      max-height: 350px;
       overflow: hidden;
     }
 
@@ -138,6 +139,7 @@ export const generalPostTemplate: GraphicTemplate = {
       line-height: 1.03;
       letter-spacing: -1.1px;
       text-align: left;
+      max-height: 210px;
     }
 
     .preset-1200x627 .s5-rule {

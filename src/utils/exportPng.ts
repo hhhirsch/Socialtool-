@@ -1,4 +1,5 @@
 import html2canvas from 'html2canvas';
+import { applyGeneralPostTitleFit } from '../lib/grafik-builder/useFitText';
 import { buildExportMarkup, EXPORT_ROOT_SELECTOR } from './previewDocument';
 
 const EXPORT_ASSET_TIMEOUT_MS = 1_000;
@@ -250,6 +251,8 @@ export async function exportPng(
     reportExportStatus(PNG_EXPORT_STATUS.exportRootFound, onStatus, effectiveOpenedTab);
     reportExportStatus(PNG_EXPORT_STATUS.waitingForAssets, onStatus, effectiveOpenedTab);
     await waitForExportAssetsBestEffort(mountNode);
+    applyGeneralPostTitleFit(graphicRoot);
+    await waitForAnimationFrame();
     reportExportStatus(PNG_EXPORT_STATUS.assetsReady, onStatus, effectiveOpenedTab);
     let dataUrl: string;
     try {
