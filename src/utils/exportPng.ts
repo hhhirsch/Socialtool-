@@ -2,10 +2,18 @@ import html2canvas from 'html2canvas';
 import { getExportRoot, waitForIframeDocument, waitForPreviewReady } from './previewExport';
 
 const BLOB_URL_REVOCATION_DELAY_MS = 10_000;
+const PREVIEW_READY_TIMEOUT_MS = 15_000;
+const PREVIEW_READY_TIMEOUT_ERROR = 'Preview-Bereitschaft konnte nicht rechtzeitig bestätigt werden.';
 const PNG_EXPORT_STATUS = {
   preparing: 'PNG wird vorbereitet...',
   iframeFound: 'iframe gefunden',
-  previewReady: 'Preview bereit',
+  checkingIframeContentDocument: 'prüfe iframe.contentDocument',
+  iframeContentDocumentAvailable: 'iframe.contentDocument vorhanden',
+  checkingIframeContentWindow: 'prüfe iframe.contentWindow',
+  iframeContentWindowAvailable: 'iframe.contentWindow vorhanden',
+  waitingForPreviewReady: 'warte auf Preview-Bereitschaft',
+  previewReadyConfirmed: 'Preview-Bereitschaft bestätigt',
+  searchingExportRoot: 'suche Export-Root',
   exportRootFound: 'Export-Root gefunden',
   html2canvasStarted: 'html2canvas gestartet',
   canvasCreated: 'Canvas erzeugt',
@@ -85,6 +93,32 @@ function writeExportTabError(openedTab: Window, error: Error): void {
   `;
 }
 
+async function waitForPreviewReadyWithTimeout(document: Document): Promise<void> {
+  let timeoutId: number | undefined;
+
+  try {
+    await Promise.race([
+      waitForPreviewReady(document),
+      new Promise<never>((_, reject) => {
+        timeoutId = window.setTimeout(() => {
+          reject(new Error(PREVIEW_READY_TIMEOUT_ERROR));
+        }, PREVIEW_READY_TIMEOUT_MS);
+      }),
+    ]);
+  } catch (error) {
+    const normalizedError = normalizeError(error);
+    if (normalizedError.message === PREVIEW_READY_TIMEOUT_ERROR) {
+      throw normalizedError;
+    }
+
+    throw new Error(`Preview-Bereitschaft konnte nicht bestätigt werden: ${normalizedError.message}`);
+  } finally {
+    if (timeoutId !== undefined) {
+      window.clearTimeout(timeoutId);
+    }
+  }
+}
+
 /**
  * Exports the isolated graphic in its original preset resolution.
  */
@@ -115,21 +149,36 @@ export async function exportPng(
       }
 
       writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.iframeFound);
+      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.checkingIframeContentDocument);
 
-      let liveDocument: Document;
       try {
-        liveDocument = await waitForIframeDocument(liveFrame);
-      } catch (error) {
-        throw new Error(`iframe document nicht verfügbar: ${normalizeError(error).message}`);
+        await waitForIframeDocument(liveFrame);
+      } catch {
+        throw new Error('iframe.contentDocument ist nicht verfügbar.');
       }
 
-      await waitForPreviewReady(liveDocument);
-      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.previewReady);
+      const liveDocument = liveFrame.contentDocument;
+      if (!liveDocument) {
+        throw new Error('iframe.contentDocument ist nicht verfügbar.');
+      }
+
+      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.iframeContentDocumentAvailable);
+      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.checkingIframeContentWindow);
+
+      if (!liveFrame.contentWindow) {
+        throw new Error('iframe.contentWindow ist nicht verfügbar.');
+      }
+
+      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.iframeContentWindowAvailable);
+      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.waitingForPreviewReady);
+      await waitForPreviewReadyWithTimeout(liveDocument);
+      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.previewReadyConfirmed);
+      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.searchingExportRoot);
 
       try {
         graphicRoot = getExportRoot(liveDocument);
-      } catch (error) {
-        throw new Error(`export root nicht gefunden: ${normalizeError(error).message}`);
+      } catch {
+        throw new Error('Export-Root im iframe wurde nicht gefunden.');
       }
 
       writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.exportRootFound);
@@ -148,21 +197,36 @@ export async function exportPng(
       iframe.style.border = '0';
       mountNode.appendChild(iframe);
       writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.iframeFound);
+      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.checkingIframeContentDocument);
 
-      let exportDocument: Document;
       try {
-        exportDocument = await waitForIframeDocument(iframe, documentHtml);
-      } catch (error) {
-        throw new Error(`iframe document nicht verfügbar: ${normalizeError(error).message}`);
+        await waitForIframeDocument(iframe, documentHtml);
+      } catch {
+        throw new Error('iframe.contentDocument ist nicht verfügbar.');
       }
 
-      await waitForPreviewReady(exportDocument);
-      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.previewReady);
+      const exportDocument = iframe.contentDocument;
+      if (!exportDocument) {
+        throw new Error('iframe.contentDocument ist nicht verfügbar.');
+      }
+
+      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.iframeContentDocumentAvailable);
+      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.checkingIframeContentWindow);
+
+      if (!iframe.contentWindow) {
+        throw new Error('iframe.contentWindow ist nicht verfügbar.');
+      }
+
+      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.iframeContentWindowAvailable);
+      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.waitingForPreviewReady);
+      await waitForPreviewReadyWithTimeout(exportDocument);
+      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.previewReadyConfirmed);
+      writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.searchingExportRoot);
 
       try {
         graphicRoot = getExportRoot(exportDocument);
-      } catch (error) {
-        throw new Error(`export root nicht gefunden: ${normalizeError(error).message}`);
+      } catch {
+        throw new Error('Export-Root im iframe wurde nicht gefunden.');
       }
 
       writeExportTabStatus(openedTab, PNG_EXPORT_STATUS.exportRootFound);
