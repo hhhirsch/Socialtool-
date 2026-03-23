@@ -145,11 +145,6 @@ function waitForAnimationFrame(): Promise<void> {
   });
 }
 
-async function waitForExportAssetsBestEffort(_container: HTMLElement): Promise<void> {
-  await new Promise((resolve) => window.setTimeout(resolve, 100));
-}
-
-
 function waitForImageBestEffort(image: HTMLImageElement): Promise<void> {
   if (image.complete) {
     return Promise.resolve();
@@ -178,6 +173,30 @@ function waitForImageBestEffort(image: HTMLImageElement): Promise<void> {
     image.addEventListener('load', finalize);
     image.addEventListener('error', finalize);
     timeoutState.current = window.setTimeout(finalize, EXPORT_ASSET_TIMEOUT_MS);
+  });
+}
+function waitForFontsBestEffort(): Promise<void> {
+  const fontsApi = (document as Document & {
+    fonts?: { ready?: Promise<unknown> };
+  }).fonts;
+
+  if (!fontsApi?.ready) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+
+    const finalize = (): void => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      resolve();
+    };
+
+    fontsApi.ready.then(finalize).catch(finalize);
+    window.setTimeout(finalize, EXPORT_ASSET_TIMEOUT_MS);
   });
 }
 
