@@ -1,27 +1,34 @@
 import { useEffect, useState, useCallback } from 'react';
 import { DEBOUNCE_MS } from '../constants';
-import type { AppState, BackgroundMode, TabId, ZoomLevel } from '../types';
+import type { AppState, BackgroundMode, TabId, TemplateCategory, ZoomLevel } from '../types';
 import { useDebouncedEffect } from './useDebounce';
 import { loadState, saveState } from '../utils/storage';
 import {
+  ensureCompatiblePresetId,
+  getDefaultTemplateForCategory,
+  getTemplateById,
+  getTemplateDefaults,
+  getTemplatesByCategory,
   getGroupFieldIndices,
   getGroupFieldKey,
-  ensureCompatiblePresetId,
-  getTemplateById,
   isTemplateFieldGroup,
+  isValidTemplateCategory,
   isValidTemplateId,
   mergeTemplateFieldValues,
-  getTemplateDefaults,
   normalizeTemplateFieldValues,
 } from '../utils/templateRegistry';
 
 function createInitialState(): { state: AppState; message: string | null } {
   const { state: persistedState, error } = loadState();
-  const resolvedTemplate = getTemplateById(persistedState.selectedTemplateId);
-  const selectedTemplateId = isValidTemplateId(persistedState.selectedTemplateId)
-    ? persistedState.selectedTemplateId
-    : resolvedTemplate.id;
-  const selectedPresetId = ensureCompatiblePresetId(resolvedTemplate, persistedState.selectedPresetId);
+  const persistedTemplate = getTemplateById(persistedState.selectedTemplateId);
+  const selectedCategory = isValidTemplateCategory(persistedState.selectedCategory)
+    ? persistedState.selectedCategory
+    : persistedTemplate.category;
+  const selectedTemplate = isValidTemplateId(persistedState.selectedTemplateId)
+    && persistedTemplate.category === selectedCategory
+    ? persistedTemplate
+    : getDefaultTemplateForCategory(selectedCategory);
+  const selectedPresetId = ensureCompatiblePresetId(selectedTemplate, persistedState.selectedPresetId);
   const mismatchMessage =
     selectedPresetId !== persistedState.selectedPresetId
       ? 'Gespeichertes Format war mit der Vorlage nicht kompatibel und wurde angepasst.'
@@ -29,9 +36,10 @@ function createInitialState(): { state: AppState; message: string | null } {
 
   return {
     state: {
-      selectedTemplateId,
+      selectedCategory,
+      selectedTemplateId: selectedTemplate.id,
       selectedPresetId,
-      fieldValues: mergeTemplateFieldValues(resolvedTemplate, persistedState.fieldValues),
+      fieldValues: mergeTemplateFieldValues(selectedTemplate, persistedState.fieldValues),
       activeTab: persistedState.activeTab,
       previewScale: persistedState.previewScale,
       backgroundMode: persistedState.backgroundMode,
@@ -50,6 +58,7 @@ export function useAppState() {
   useDebouncedEffect(
     () => {
       const storageError = saveState({
+        selectedCategory: state.selectedCategory,
         selectedTemplateId: state.selectedTemplateId,
         selectedPresetId: state.selectedPresetId,
         fieldValues: state.fieldValues,
@@ -64,6 +73,7 @@ export function useAppState() {
       }
     },
     [
+      state.selectedCategory,
       state.selectedTemplateId,
       state.selectedPresetId,
       state.fieldValues,
@@ -101,11 +111,30 @@ export function useAppState() {
     setState((currentState) => ({ ...currentState, activeTab: tab }));
   }, []);
 
+  const selectCategory = useCallback((category: TemplateCategory) => {
+    setState((currentState) => {
+      if (currentState.selectedCategory === category) {
+        return currentState;
+      }
+
+      const nextTemplate = getTemplatesByCategory(category)[0] ?? getDefaultTemplateForCategory(category);
+
+      return {
+        ...currentState,
+        selectedCategory: category,
+        selectedTemplateId: nextTemplate.id,
+        selectedPresetId: ensureCompatiblePresetId(nextTemplate, currentState.selectedPresetId),
+        fieldValues: getTemplateDefaults(nextTemplate),
+      };
+    });
+  }, []);
+
   const selectTemplate = useCallback((templateId: string) => {
     const template = getTemplateById(templateId);
 
     setState((currentState) => ({
       ...currentState,
+      selectedCategory: template.category,
       selectedTemplateId: template.id,
       selectedPresetId: ensureCompatiblePresetId(template, currentState.selectedPresetId),
       fieldValues: getTemplateDefaults(template),
@@ -260,6 +289,7 @@ export function useAppState() {
     showError,
     dismissError,
     setActiveTab,
+    selectCategory,
     selectTemplate,
     selectPreset,
     updateFieldValue,

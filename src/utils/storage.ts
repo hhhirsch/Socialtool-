@@ -6,14 +6,17 @@ import type {
   PersistedAppState,
   StorageLoadResult,
   TabId,
+  TemplateCategory,
   ZoomLevel,
 } from '../types';
 
 const VALID_TABS: TabId[] = ['content', 'preview', 'templates', 'advanced'];
 const VALID_BACKGROUNDS: BackgroundMode[] = ['white', 'gray', 'transparent'];
 const VALID_ZOOMS: ZoomLevel[] = ['fit', '50', '75', '100'];
+const VALID_TEMPLATE_CATEGORIES: TemplateCategory[] = ['business', 'podcast'];
 
 const defaultState: PersistedAppState = {
+  selectedCategory: 'business',
   selectedTemplateId: DEFAULT_TEMPLATE_ID,
   selectedPresetId: DEFAULT_PRESET_ID,
   fieldValues: {},
@@ -63,6 +66,9 @@ export function loadState(): StorageLoadResult {
 
     return {
       state: {
+        selectedCategory: VALID_TEMPLATE_CATEGORIES.includes(parsed.selectedCategory as TemplateCategory)
+          ? (parsed.selectedCategory as TemplateCategory)
+          : defaultState.selectedCategory,
         selectedTemplateId:
           typeof parsed.selectedTemplateId === 'string'
             ? parsed.selectedTemplateId

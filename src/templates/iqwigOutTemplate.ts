@@ -16,6 +16,7 @@ export const iqwigOutTemplate: GraphicTemplate = {
   id: "iqwig-out",
   name: "IQWiG Bewertung",
   description: "Timeline-orientierte Slide für veröffentlichte IQWiG-Bewertungen.",
+  category: "business",
   supportedPresetIds: ["1080x1080", "1080x1350", "1200x627"],
   rawHtmlPlaceholders: ["groupsHtml"],
   htmlTemplate: `

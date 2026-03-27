@@ -7,7 +7,8 @@ import { copySlideHtml } from '../utils/generateSlideHtml';
 import { buildPreviewDocument } from '../utils/previewDocument';
 import { getPresetById } from '../utils/presets';
 import { renderTemplate } from '../utils/renderTemplate';
-import { getTemplateById, getTemplates } from '../utils/templateRegistry';
+import { getTemplateById, getTemplatesByCategory } from '../utils/templateRegistry';
+import { CategorySelector } from './CategorySelector';
 import { DynamicFieldForm } from './DynamicFieldForm';
 import { ErrorBanner } from './ErrorBanner';
 import { PresetSelector } from './PresetSelector';
@@ -19,9 +20,12 @@ import { ToastMessage } from './ToastMessage';
 import styles from './AppShell.module.css';
 
 const EXPORT_STATUS_DISPLAY_DURATION_MS = 4_000;
+const CATEGORY_LABELS = {
+  business: 'Business',
+  podcast: 'Podcast',
+} as const;
 
 export function AppShell() {
-  const templates = useMemo(() => getTemplates(), []);
   const previewFrameRef = useRef<HTMLIFrameElement>(null);
   const [copied, setCopied] = useState(false);
   const [exportStatus, setExportStatus] = useState<string | null>(null);
@@ -34,6 +38,7 @@ export function AppShell() {
     showError,
     dismissError,
     setActiveTab,
+    selectCategory,
     selectTemplate,
     selectPreset,
     updateFieldValue,
@@ -49,6 +54,10 @@ export function AppShell() {
   const selectedTemplate = useMemo(
     () => getTemplateById(state.selectedTemplateId),
     [state.selectedTemplateId]
+  );
+  const categoryTemplates = useMemo(
+    () => getTemplatesByCategory(state.selectedCategory),
+    [state.selectedCategory]
   );
   const selectedPreset = useMemo(
     () => getPresetById(state.selectedPresetId),
@@ -147,10 +156,11 @@ export function AppShell() {
 
       <header className={styles.header}>
         <div>
-          <p className={styles.kicker}>Mobile-first LinkedIn Grafikgenerator</p>
-          <h1 className={styles.title}>LinkedIn Graphic Builder</h1>
+          <p className={styles.kicker}>Mobile-first Grafikgenerator für Business & Podcast</p>
+          <h1 className={styles.title}>Social Graphic Builder</h1>
         </div>
         <div className={styles.headerMeta}>
+          <span>{CATEGORY_LABELS[state.selectedCategory]}</span>
           <span>{selectedTemplate.name}</span>
           <span>
             {selectedPreset.width} × {selectedPreset.height}px
@@ -166,6 +176,18 @@ export function AppShell() {
             <section className={styles.card}>
               <div className={styles.sectionHeader}>
                 <div>
+                  <h2 className={styles.sectionTitle}>Bereich wählen</h2>
+                  <p className={styles.sectionText}>
+                    Business- und Podcast-Vorlagen bleiben getrennt und verwenden dasselbe Formularsystem.
+                  </p>
+                </div>
+              </div>
+              <CategorySelector selectedCategory={state.selectedCategory} onSelect={selectCategory} />
+            </section>
+
+            <section className={styles.card}>
+              <div className={styles.sectionHeader}>
+                <div>
                   <h2 className={styles.sectionTitle}>Vorlage wählen</h2>
                   <p className={styles.sectionText}>
                     Inhalte bleiben formularbasiert. HTML und CSS werden intern aus der Vorlage erzeugt.
@@ -173,7 +195,7 @@ export function AppShell() {
                 </div>
               </div>
               <TemplateSelector
-                templates={templates}
+                templates={categoryTemplates}
                 selectedTemplateId={selectedTemplate.id}
                 onSelect={selectTemplate}
               />
@@ -298,6 +320,18 @@ export function AppShell() {
             <section className={styles.card}>
               <div className={styles.sectionHeader}>
                 <div>
+                  <h2 className={styles.sectionTitle}>Bereich wählen</h2>
+                  <p className={styles.sectionText}>
+                    Die Vorlagenbibliothek zeigt nur Templates des aktuell aktiven Bereichs.
+                  </p>
+                </div>
+              </div>
+              <CategorySelector selectedCategory={state.selectedCategory} onSelect={selectCategory} />
+            </section>
+
+            <section className={styles.card}>
+              <div className={styles.sectionHeader}>
+                <div>
                   <h2 className={styles.sectionTitle}>Vorlagenbibliothek</h2>
                   <p className={styles.sectionText}>
                     Neue Templates können zentral über das datengetriebene Registry-System ergänzt werden.
@@ -305,7 +339,7 @@ export function AppShell() {
                 </div>
               </div>
               <TemplateLibrary
-                templates={templates}
+                templates={categoryTemplates}
                 selectedTemplateId={selectedTemplate.id}
                 onSelect={handleLibrarySelect}
               />

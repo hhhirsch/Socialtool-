@@ -16,6 +16,7 @@ export const decisionOutTemplate: GraphicTemplate = {
   id: "decision-out",
   name: "Verfahren abgeschlossen",
   description: "Slide für G-BA-Beschlüsse und differenzierte Outcome-Kommunikation.",
+  category: "business",
   supportedPresetIds: ["1080x1080", "1080x1350", "1200x627"],
   rawHtmlPlaceholders: ["groupsHtml"],
   htmlTemplate: `

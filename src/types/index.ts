@@ -11,6 +11,7 @@ export interface TemplateOption {
 }
 
 export type TemplateFieldType = 'text' | 'textarea' | 'select' | 'number' | 'date';
+export type TemplateCategory = 'business' | 'podcast';
 
 export type FieldValues = Record<string, string>;
 
@@ -45,6 +46,7 @@ export interface GraphicTemplate {
   id: string;
   name: string;
   description: string;
+  category: TemplateCategory;
   supportedPresetIds: string[];
   htmlTemplate: string;
   css: string;
@@ -59,6 +61,7 @@ export type BackgroundMode = 'white' | 'gray' | 'transparent';
 export type ZoomLevel = 'fit' | '50' | '75' | '100';
 
 export interface AppState {
+  selectedCategory: TemplateCategory;
   selectedTemplateId: string;
   selectedPresetId: string;
   fieldValues: FieldValues;
@@ -69,6 +72,7 @@ export interface AppState {
 }
 
 export interface PersistedAppState {
+  selectedCategory: TemplateCategory;
   selectedTemplateId: string;
   selectedPresetId: string;
   fieldValues: FieldValues;

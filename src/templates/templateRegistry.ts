@@ -3,11 +3,13 @@ import { decisionOutTemplate } from "./decisionOutTemplate";
 import { iqwigOutTemplate } from "./iqwigOutTemplate";
 import { carouselSlideTemplate } from "./carouselSlideTemplate";
 import { generalPostTemplate } from "./generalPostTemplate";
+import { podcastQuoteTileTemplate } from "./podcastQuoteTileTemplate";
 
 export const templateRegistry = [
   toWatchTemplate,
   decisionOutTemplate,
   iqwigOutTemplate,
   carouselSlideTemplate,
-  generalPostTemplate
+  generalPostTemplate,
+  podcastQuoteTileTemplate
 ];
