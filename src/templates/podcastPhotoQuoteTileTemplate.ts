@@ -22,6 +22,11 @@ function clampPercentage(value: string, fallback: number): string {
 const defaultPhotoSrc =
   'data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDgwIDEwODAnPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0nYmcnIHgxPScwJyB5MT0nMCcgeDI9JzEnIHkyPScxJz48c3RvcCBvZmZzZXQ9JzAlJyBzdG9wLWNvbG9yPScjMjkzYTU2Jy8+PHN0b3Agb2Zmc2V0PScxMDAlJyBzdG9wLWNvbG9yPScjOGQ0ZjZkJy8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9JzEwODAnIGhlaWdodD0nMTA4MCcgZmlsbD0ndXJsKCNiZyknLz48Y2lyY2xlIGN4PSc3ODUnIGN5PSczMjUnIHI9JzI1NScgZmlsbD0nI2YzZDRjNicgZmlsbC1vcGFjaXR5PScuMzInLz48Y2lyY2xlIGN4PSczNDAnIGN5PSc3ODUnIHI9JzI5NScgZmlsbD0nI2ZmZmZmZicgZmlsbC1vcGFjaXR5PScuMTInLz48L3N2Zz4=';
 
+const overlayTopBaseAlpha = 0.2;
+const overlayTopAlphaRange = 0.28;
+const overlayBottomBaseAlpha = 0.54;
+const overlayBottomAlphaRange = 0.28;
+
 export const podcastPhotoQuoteTileTemplate: GraphicTemplate = {
   id: 'podcast-photo-quote-tile',
   name: 'Podcast · Foto-Zitatekachel',
@@ -276,8 +281,8 @@ export const podcastPhotoQuoteTileTemplate: GraphicTemplate = {
     const photoPositionY = clampPercentage(String(values.photoPositionY ?? ''), 50);
     const overlayStrength = clampPercentage(String(values.overlayStrength ?? ''), 58);
     const overlayFactor = Number.parseFloat(overlayStrength) / 100;
-    const topAlpha = (0.2 + overlayFactor * 0.28).toFixed(2);
-    const bottomAlpha = (0.54 + overlayFactor * 0.28).toFixed(2);
+    const topAlpha = (overlayTopBaseAlpha + overlayFactor * overlayTopAlphaRange).toFixed(2);
+    const bottomAlpha = (overlayBottomBaseAlpha + overlayFactor * overlayBottomAlphaRange).toFixed(2);
     const overlayBackground = `linear-gradient(180deg, rgba(6, 10, 24, ${topAlpha}) 0%, rgba(6, 10, 24, ${bottomAlpha}) 100%)`;
     const episodeNumber = String(values.episodeNumber ?? '').trim();
     const episodeBadgeLabel = episodeNumber ? `Folge #${episodeNumber}` : 'Podcast';
