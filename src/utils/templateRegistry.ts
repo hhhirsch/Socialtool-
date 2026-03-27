@@ -4,6 +4,7 @@ import type {
   FieldValues,
   GraphicTemplate,
   Preset,
+  TemplateCategory,
   TemplateField,
   TemplateFieldDefinition,
   TemplateFieldGroup,
@@ -95,8 +96,16 @@ export function getTemplates(): GraphicTemplate[] {
   return GRAPHIC_TEMPLATES;
 }
 
+export function getTemplatesByCategory(category: TemplateCategory): GraphicTemplate[] {
+  return GRAPHIC_TEMPLATES.filter((template) => template.category === category);
+}
+
 export function getTemplateById(id: string): GraphicTemplate {
   return GRAPHIC_TEMPLATES.find((template) => template.id === id) ?? GRAPHIC_TEMPLATES[0];
+}
+
+export function getDefaultTemplateForCategory(category: TemplateCategory): GraphicTemplate {
+  return GRAPHIC_TEMPLATES.find((template) => template.category === category) ?? GRAPHIC_TEMPLATES[0];
 }
 
 export function getTemplateDefaults(template: GraphicTemplate): FieldValues {
@@ -241,6 +250,10 @@ export function getSupportedPresets(template: GraphicTemplate, presets: Preset[]
 
 export function isValidTemplateId(templateId: string): boolean {
   return GRAPHIC_TEMPLATES.some((template) => template.id === templateId);
+}
+
+export function isValidTemplateCategory(category: string): category is TemplateCategory {
+  return category === 'business' || category === 'podcast';
 }
 
 export { DEFAULT_TEMPLATE_ID, getPresetById };

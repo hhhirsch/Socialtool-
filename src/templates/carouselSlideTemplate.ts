@@ -5,6 +5,7 @@ export const carouselSlideTemplate: GraphicTemplate = {
   id: "carousel-slide",
   name: "Carousel Slide",
   description: "These-Slide für Serienposts und vertikale LinkedIn-Carousels.",
+  category: "business",
   supportedPresetIds: ["1080x1080", "1080x1350", "1200x627"],
   htmlTemplate: `
     <div class="slide">

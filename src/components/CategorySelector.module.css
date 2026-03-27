@@ -1,0 +1,27 @@
+.selector {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.button {
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.02);
+  color: var(--gb-text-soft);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.button:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.buttonActive {
+  background: var(--gb-gold-faint);
+  border-color: var(--gb-border-gold);
+  color: var(--gb-gold);
+}

@@ -5,6 +5,7 @@ export const generalPostTemplate: GraphicTemplate = {
   id: "general-post",
   name: "Allgemeiner Beitrag",
   description: "Meinungs- oder Einordnungsformat mit Titel, Body und Pull-Quote.",
+  category: "business",
   supportedPresetIds: ["1080x1080", "1080x1350", "1200x627"],
   htmlTemplate: `
     <div class="slide">
