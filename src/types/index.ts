@@ -10,7 +10,7 @@ export interface TemplateOption {
   value: string;
 }
 
-export type TemplateFieldType = 'text' | 'textarea' | 'select' | 'number' | 'date';
+export type TemplateFieldType = 'text' | 'textarea' | 'select' | 'number' | 'date' | 'image';
 export type TemplateCategory = 'business' | 'podcast';
 
 export type FieldValues = Record<string, string>;
