@@ -1,52 +1,33 @@
 import type { GraphicTemplate } from './types';
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function clampPercentage(value: string, fallback: number): string {
-  const parsedValue = Number.parseFloat(value);
-
-  if (!Number.isFinite(parsedValue)) {
-    return String(fallback);
-  }
-
-  return String(Math.min(100, Math.max(0, parsedValue)));
-}
-
-const defaultPhotoSrc =
-  'data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxMDgwIDEwODAnPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0nYmcnIHgxPScwJyB5MT0nMCcgeDI9JzEnIHkyPScxJz48c3RvcCBvZmZzZXQ9JzAlJyBzdG9wLWNvbG9yPScjMjkzYTU2Jy8+PHN0b3Agb2Zmc2V0PScxMDAlJyBzdG9wLWNvbG9yPScjOGQ0ZjZkJy8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9JzEwODAnIGhlaWdodD0nMTA4MCcgZmlsbD0ndXJsKCNiZyknLz48Y2lyY2xlIGN4PSc3ODUnIGN5PSczMjUnIHI9JzI1NScgZmlsbD0nI2YzZDRjNicgZmlsbC1vcGFjaXR5PScuMzInLz48Y2lyY2xlIGN4PSczNDAnIGN5PSc3ODUnIHI9JzI5NScgZmlsbD0nI2ZmZmZmZicgZmlsbC1vcGFjaXR5PScuMTInLz48L3N2Zz4=';
-
-const overlayTopBaseAlpha = 0.2;
-const overlayTopAlphaRange = 0.28;
-const overlayBottomBaseAlpha = 0.54;
-const overlayBottomAlphaRange = 0.28;
-
 export const podcastPhotoQuoteTileTemplate: GraphicTemplate = {
   id: 'podcast-photo-quote-tile',
   name: 'Podcast · Foto-Zitatekachel',
-  description: 'Quadratische Podcast-Zitatekachel mit großem Hintergrundfoto und Text-Overlay.',
+  description: 'Quadratische Instagram-Kachel mit Foto, Overlay und Zitat für Podcast-Episoden.',
   category: 'podcast',
   supportedPresetIds: ['1080x1080'],
   htmlTemplate: `
     <div class="tile">
-      <div class="tile-media">
-        <img class="tile-photo" src="{{photoSrc}}" alt="" style="object-position: {{photoObjectPosition}};" />
-        <div class="tile-overlay" style="background: {{overlayBackground}};"></div>
-      </div>
+      <img
+        class="tile-photo"
+        src="{{photoSrc}}"
+        alt="Gast-Foto"
+        style="object-position: {{photoPosition}};"
+      >
+      <div class="tile-overlay" style="{{overlayStyle}}"></div>
 
       <div class="tile-content">
         <div class="tile-top">
-          <div class="tile-show-name">{{showName}}</div>
-          <div class="tile-episode-badge">{{episodeBadgeLabel}}</div>
+          <div class="tile-logo">{{showName}}</div>
+          <div class="tile-episode-badge">FOLGE #{{episodeNumber}}</div>
         </div>
 
-        <div class="tile-quote">{{quoteHtml}}</div>
+        <div class="tile-spacer"></div>
+
+        <div class="tile-quote-area">
+          <div class="tile-quote-mark">&bdquo;</div>
+          <div class="tile-quote">{{quoteHtml}}</div>
+        </div>
 
         <div class="tile-bottom">
           <div class="tile-meta">
@@ -54,21 +35,23 @@ export const podcastPhotoQuoteTileTemplate: GraphicTemplate = {
             <div class="tile-episode-title">{{episodeTitle}}</div>
             <div class="tile-tags">{{tagsHtml}}</div>
           </div>
-
           <div class="tile-handle">{{handle}}</div>
         </div>
       </div>
+
+      <div class="tile-accent-line"></div>
     </div>
   `,
   css: `
     :root {
-      --tile-text: #f7f3ec;
-      --tile-text-soft: rgba(247, 243, 236, 0.84);
-      --tile-tag-bg: rgba(247, 243, 236, 0.16);
-      --tile-tag-border: rgba(247, 243, 236, 0.28);
-      --tile-badge-bg: rgba(247, 243, 236, 0.16);
-      --tile-badge-border: rgba(247, 243, 236, 0.2);
-      --tile-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+      --lav: #c4a0d0;
+      --lav-l: #e8d5f0;
+      --lav-d: #9b6eb5;
+      --lav-dp: #6b3f8a;
+      --bg: #f5eefa;
+      --td: #2a1540;
+      --tm: #5a3d75;
+      --tl: #8b6aaa;
       --font-heading: 'Fraunces', Georgia, serif;
       --font-body: 'DM Sans', system-ui, sans-serif;
     }
@@ -84,221 +67,261 @@ export const podcastPhotoQuoteTileTemplate: GraphicTemplate = {
       height: 1080px;
       position: relative;
       overflow: hidden;
-      background: #111827;
-      color: var(--tile-text);
-      font-family: var(--font-body);
+      background: #1a1020;
       flex-shrink: 0;
-    }
-
-    .tile-media,
-    .tile-photo,
-    .tile-overlay,
-    .tile-content {
-      position: absolute;
-      inset: 0;
+      font-family: var(--font-body);
     }
 
     .tile-photo {
+      position: absolute;
+      inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
-      display: block;
-      transform: scale(1.02);
+      object-position: center top;
+      z-index: 1;
     }
 
     .tile-overlay {
-      pointer-events: none;
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      background:
+        linear-gradient(
+          to bottom,
+          rgba(42, 21, 64, 0.0) 0%,
+          rgba(42, 21, 64, 0.05) 25%,
+          rgba(42, 21, 64, 0.45) 50%,
+          rgba(42, 21, 64, 0.82) 68%,
+          rgba(42, 21, 64, 0.94) 80%,
+          rgba(42, 21, 64, 0.98) 100%
+        );
+    }
+
+    .tile-overlay::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 180px;
+      background: linear-gradient(to bottom, rgba(107, 63, 138, 0.25) 0%, transparent 100%);
     }
 
     .tile-content {
-      z-index: 1;
+      position: relative;
+      z-index: 3;
+      width: 100%;
+      height: 100%;
       display: flex;
       flex-direction: column;
-      padding: 68px 64px 58px;
-      gap: 36px;
+      padding: 56px 64px 52px;
     }
 
-    .tile-top,
-    .tile-bottom {
+    .tile-top {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      gap: 24px;
+      align-items: center;
     }
 
-    .tile-show-name {
-      max-width: 58%;
+    .tile-logo {
+      font-family: var(--font-heading);
+      font-style: italic;
+      font-weight: 400;
       font-size: 26px;
-      font-weight: 600;
-      letter-spacing: 0.01em;
-      text-wrap: balance;
-      text-shadow: var(--tile-shadow);
+      color: rgba(255,255,255,0.92);
+      text-shadow: 0 2px 12px rgba(0,0,0,0.4);
     }
 
     .tile-episode-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 48px;
-      padding: 12px 20px;
-      border: 1px solid var(--tile-badge-border);
-      border-radius: 999px;
-      background: var(--tile-badge-bg);
-      font-size: 14px;
+      font-family: var(--font-body);
+      font-size: 13px;
       font-weight: 700;
-      letter-spacing: 0.14em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      white-space: nowrap;
+      color: white;
+      background: rgba(107, 63, 138, 0.65);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 8px 20px;
+      border-radius: 999px;
+      border: 1px solid rgba(196, 160, 208, 0.3);
+    }
+
+    .tile-spacer {
+      flex: 1;
+    }
+
+    .tile-quote-area {
+      margin-bottom: 28px;
+    }
+
+    .tile-quote-mark {
+      font-family: var(--font-heading);
+      font-size: 96px;
+      line-height: 0.5;
+      color: var(--lav);
+      opacity: 0.6;
+      margin-bottom: 12px;
+      text-shadow: 0 2px 20px rgba(107,63,138,0.4);
+      user-select: none;
     }
 
     .tile-quote {
-      margin-top: auto;
-      max-width: 820px;
       font-family: var(--font-heading);
-      font-size: 64px;
-      font-weight: 600;
-      line-height: 1.08;
-      letter-spacing: -0.03em;
-      text-wrap: balance;
-      text-shadow: var(--tile-shadow);
+      font-size: 44px;
+      font-weight: 700;
+      line-height: 1.22;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      max-width: 900px;
+      text-shadow: 0 2px 16px rgba(0,0,0,0.35);
     }
 
     .tile-quote em {
+      color: var(--lav-l);
       font-style: italic;
       font-weight: 400;
     }
 
     .tile-bottom {
-      margin-top: auto;
+      display: flex;
+      justify-content: space-between;
       align-items: flex-end;
+      gap: 20px;
     }
 
     .tile-meta {
-      max-width: 72%;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 5px;
     }
 
     .tile-guest {
-      min-height: 28px;
-      font-size: 26px;
-      font-weight: 500;
-      line-height: 1.1;
-      color: var(--tile-text);
-      text-shadow: var(--tile-shadow);
+      font-family: var(--font-body);
+      font-size: 20px;
+      font-weight: 600;
+      color: #ffffff;
     }
 
     .tile-episode-title {
-      font-size: 20px;
+      font-family: var(--font-body);
+      font-size: 16px;
       font-weight: 500;
-      line-height: 1.35;
-      color: var(--tile-text-soft);
-      text-shadow: var(--tile-shadow);
+      color: rgba(232, 213, 240, 0.75);
     }
 
     .tile-tags {
       display: flex;
+      gap: 8px;
+      margin-top: 6px;
       flex-wrap: wrap;
-      gap: 10px;
-      min-height: 42px;
-      margin-top: 4px;
     }
 
     .tile-tag {
-      display: inline-flex;
-      align-items: center;
-      min-height: 36px;
-      padding: 8px 14px;
-      border: 1px solid var(--tile-tag-border);
-      border-radius: 999px;
-      background: var(--tile-tag-bg);
-      font-size: 14px;
+      font-family: var(--font-body);
+      font-size: 12px;
       font-weight: 600;
-      letter-spacing: 0.02em;
-      color: var(--tile-text);
+      color: white;
+      background: rgba(196, 160, 208, 0.3);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(196, 160, 208, 0.2);
     }
 
     .tile-handle {
-      max-width: 28%;
-      font-size: 18px;
-      font-weight: 600;
-      line-height: 1.3;
-      color: var(--tile-text);
+      font-family: var(--font-body);
+      font-size: 16px;
+      font-weight: 500;
+      color: rgba(232, 213, 240, 0.65);
       text-align: right;
-      text-shadow: var(--tile-shadow);
-      word-break: break-word;
+      white-space: nowrap;
+    }
+
+    .tile-accent-line {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, var(--lav-dp), var(--lav), var(--lav-l));
+      z-index: 4;
     }
   `,
   fields: [
-    {
-      id: 'photoSrc',
-      label: 'Foto-URL / Data-URL',
-      type: 'text',
-      helpText: 'Akzeptiert zunächst eine Bild-URL oder Data-URL und kann später direkt an einen Upload gebunden werden.',
-    },
-    { id: 'photoPositionX', label: 'Foto-Position X (%)', type: 'number' },
-    { id: 'photoPositionY', label: 'Foto-Position Y (%)', type: 'number' },
-    { id: 'overlayStrength', label: 'Overlay-Stärke (%)', type: 'number' },
+    { id: 'photoSrc', label: 'Gast-Foto', type: 'image' as any },
+    { id: 'photoPositionY', label: 'Bildposition vertikal', type: 'number' },
+    { id: 'photoPositionX', label: 'Bildposition horizontal', type: 'number' },
+    { id: 'overlayStrength', label: 'Overlay-Stärke', type: 'number' },
     { id: 'quote', label: 'Zitat', type: 'textarea', multiline: true },
-    { id: 'episodeNumber', label: 'Folgennummer', type: 'number' },
+    { id: 'episodeNumber', label: 'Folgennr.', type: 'number' },
     { id: 'guest', label: 'Gast', type: 'text' },
     { id: 'episodeTitle', label: 'Folgentitel', type: 'text' },
     { id: 'tags', label: 'Tags (kommagetrennt)', type: 'text' },
     { id: 'handle', label: 'Handle', type: 'text' },
-    { id: 'showName', label: 'Showname', type: 'text' },
+    { id: 'showName', label: 'Showname / Logo', type: 'text' },
   ],
   defaults: {
-    photoSrc: defaultPhotoSrc,
+    photoSrc: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=1200&q=80',
+    photoPositionY: '15',
     photoPositionX: '50',
-    photoPositionY: '32',
-    overlayStrength: '58',
-    quote:
-      'Manchmal braucht es nur *einen Satz*, damit ein ganzes Gespräch noch lange nachhallt.',
-    episodeNumber: '43',
-    guest: 'Meryem Özkan',
-    episodeTitle: 'Wie wir Geschichten sichtbar machen',
-    tags: 'Podcast, Storytelling, Gespräch',
-    handle: '@linkinbio.podcast',
+    overlayStrength: '70',
+    quote: 'Essen ist nie nur Essen. Es ist immer auch *eine Erinnerung an Zuhause.*',
+    episodeNumber: '4',
+    guest: 'Fikri Anıl Altıntaş',
+    episodeTitle: 'Büchse der Lyoner – mit Anıl',
+    tags: 'Kindheit, Identität, Interview',
+    handle: '@yasminpolat',
     showName: 'Link in Bio',
   },
   resolveFieldValues: (values) => {
+    const escapeHtml = (value: string) =>
+      value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+
     const rawQuote = String(values.quote ?? '').trim();
     const quoteHtml = escapeHtml(rawQuote)
       .replace(/\*([^*]+)\*/g, '<em>$1</em>')
       .replace(/\n/g, '<br>');
 
-    const tagsHtml = String(values.tags ?? '')
+    const tags = String(values.tags ?? '')
       .split(',')
       .map((tag) => tag.trim())
-      .filter(Boolean)
-      .map((tag) => `<span class="tile-tag">${escapeHtml(tag)}</span>`)
-      .join('');
+      .filter(Boolean);
+
+    const tagsHtml = tags.map((tag) => `<span class="tile-tag">${escapeHtml(tag)}</span>`).join('');
 
     const guest = String(values.guest ?? '').trim();
     const guestDisplay = guest ? `— ${guest}` : '';
-    const photoPositionX = clampPercentage(String(values.photoPositionX ?? ''), 50);
-    const photoPositionY = clampPercentage(String(values.photoPositionY ?? ''), 50);
-    const overlayStrength = clampPercentage(String(values.overlayStrength ?? ''), 58);
-    const overlayFactor = Number.parseFloat(overlayStrength) / 100;
-    const topAlpha = (overlayTopBaseAlpha + overlayFactor * overlayTopAlphaRange).toFixed(2);
-    const bottomAlpha = (overlayBottomBaseAlpha + overlayFactor * overlayBottomAlphaRange).toFixed(2);
-    const overlayBackground = `linear-gradient(180deg, rgba(6, 10, 24, ${topAlpha}) 0%, rgba(6, 10, 24, ${bottomAlpha}) 100%)`;
-    const episodeNumber = String(values.episodeNumber ?? '').trim();
-    const episodeBadgeLabel = episodeNumber ? `Folge #${episodeNumber}` : 'Podcast';
+
+    const posX = Math.min(100, Math.max(0, Number(values.photoPositionX ?? 50)));
+    const posY = Math.min(100, Math.max(0, Number(values.photoPositionY ?? 15)));
+    const overlay = Math.min(100, Math.max(30, Number(values.overlayStrength ?? 70))) / 100;
+
+    const overlayStyle = `background:
+      linear-gradient(
+        to bottom,
+        rgba(42, 21, 64, 0.0) 0%,
+        rgba(42, 21, 64, ${0.05 * overlay}) 20%,
+        rgba(42, 21, 64, ${0.5 * overlay}) 48%,
+        rgba(42, 21, 64, ${0.85 * overlay}) 66%,
+        rgba(42, 21, 64, ${0.96 * overlay}) 80%,
+        rgba(42, 21, 64, ${0.99 * overlay}) 100%
+      );`;
 
     return {
       ...values,
       quoteHtml,
       tagsHtml,
       guestDisplay,
-      photoPositionX,
-      photoPositionY,
-      overlayStrength,
-      photoObjectPosition: `${photoPositionX}% ${photoPositionY}%`,
-      overlayBackground,
-      episodeBadgeLabel,
-      photoSrc: String(values.photoSrc ?? '').trim() || defaultPhotoSrc,
+      photoPosition: `${posX}% ${posY}%`,
+      overlayStyle,
     };
   },
   rawHtmlPlaceholders: ['quoteHtml', 'tagsHtml'],
