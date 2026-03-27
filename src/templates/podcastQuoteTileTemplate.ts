@@ -1,217 +1,269 @@
 import type { GraphicTemplate } from './types';
-import { sharedBaseCss } from './sharedBaseCss';
-import { escapeTemplateHtml } from '../utils/templateContent';
-
-const QUOTE_HIGHLIGHT_PATTERN = /(?<!\*)\*([^*]+)\*(?!\*)/g;
-
-function buildEpisodeBadge(episodeNumber: string): string {
-  const normalizedEpisodeNumber = episodeNumber.trim();
-  return normalizedEpisodeNumber ? `FOLGE #${normalizedEpisodeNumber}` : 'FOLGE';
-}
-
-function buildQuoteHtml(quote: string): string {
-  let lastIndex = 0;
-  let highlightedQuote = '';
-
-  for (const match of quote.matchAll(QUOTE_HIGHLIGHT_PATTERN)) {
-    const [fullMatch, highlightedText] = match;
-    const offset = match.index ?? 0;
-    highlightedQuote += escapeTemplateHtml(quote.slice(lastIndex, offset));
-    highlightedQuote += `<em>${escapeTemplateHtml(highlightedText)}</em>`;
-    lastIndex = offset + fullMatch.length;
-  }
-
-  highlightedQuote += escapeTemplateHtml(quote.slice(lastIndex));
-  return highlightedQuote;
-}
-
-function buildTagsHtml(tags: string): string {
-  return tags
-    .split(',')
-    .map((tag) => tag.trim())
-    .filter(Boolean)
-    .map((tag) => `<span class="podcast-tag-chip">${escapeTemplateHtml(tag)}</span>`)
-    .join('');
-}
 
 export const podcastQuoteTileTemplate: GraphicTemplate = {
-  id: "podcast-quote-tile",
-  name: "Zitatekachel",
-  description: "Quadratische Instagram-Kachel für Podcast-Zitate mit Episoden- und Gastinformationen.",
-  category: "podcast",
-  supportedPresetIds: ["1080x1080"],
-  rawHtmlPlaceholders: ["quoteHtml", "tagsHtml"],
+  id: 'podcast-quote-tile',
+  name: 'Podcast · Zitatekachel',
+  description: 'Quadratische Instagram-Zitatekachel für Podcast-Episoden.',
+  category: 'podcast',
+  supportedPresetIds: ['1080x1080'],
   htmlTemplate: `
-    <div class="slide">
-      <div class="grid"></div>
-      <div class="glow glow--tl"></div>
-      <div class="glow glow--blue-tr"></div>
-      <div class="accent-stripe"></div>
-      <div class="topbar podcast-topbar"></div>
-
-      <div class="podcast-show-name">{{showName}}</div>
-      <div class="badge badge--blue">{{episodeBadge}}</div>
-
-      <div class="podcast-quote-mark">“</div>
-      <div class="podcast-quote">{{quoteHtml}}</div>
-
-      <div class="podcast-tags">{{tagsHtml}}</div>
-
-      <div class="podcast-footer">
-        <div class="podcast-guest-block">
-          <div class="podcast-guest">{{guest}}</div>
-          <div class="podcast-episode-title">{{episodeTitle}}</div>
+    <div class="tile">
+      <div class="tile-inner">
+        <div class="tile-top">
+          <div class="tile-logo">{{showName}}</div>
+          <div class="tile-episode-badge">FOLGE #{{episodeNumber}}</div>
         </div>
-        <div class="podcast-handle">{{handle}}</div>
+
+        <div class="tile-quote-area">
+          <div class="tile-quote-mark">&bdquo;</div>
+          <div class="tile-quote">{{quoteHtml}}</div>
+        </div>
+
+        <div class="tile-bottom">
+          <div class="tile-meta">
+            <div class="tile-guest">{{guestDisplay}}</div>
+            <div class="tile-episode-title">{{episodeTitle}}</div>
+            <div class="tile-tags">{{tagsHtml}}</div>
+          </div>
+          <div class="tile-handle">{{handle}}</div>
+        </div>
       </div>
+      <div class="tile-accent-line"></div>
     </div>
   `,
   css: `
-    ${sharedBaseCss}
-
-    .podcast-topbar {
-      background: linear-gradient(90deg, #60a5fa 0%, rgba(96,165,250,0.22) 60%, transparent 100%);
+    :root {
+      --lav: #c4a0d0;
+      --lav-l: #e8d5f0;
+      --lav-d: #9b6eb5;
+      --lav-dp: #6b3f8a;
+      --bg: #f5eefa;
+      --td: #2a1540;
+      --tm: #5a3d75;
+      --tl: #8b6aaa;
+      --font-heading: 'Fraunces', Georgia, serif;
+      --font-body: 'DM Sans', system-ui, sans-serif;
     }
 
-    .podcast-show-name {
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    .tile {
+      width: 1080px;
+      height: 1080px;
+      position: relative;
+      overflow: hidden;
+      background: var(--bg);
+      flex-shrink: 0;
+      font-family: var(--font-body);
+    }
+
+    .tile::before {
+      content: '';
       position: absolute;
-      top: 58px;
-      left: 72px;
-      z-index: 5;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.24em;
-      text-transform: uppercase;
-      color: rgba(191,219,254,0.8);
+      top: -180px;
+      right: -180px;
+      width: 520px;
+      height: 520px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(196,160,208,0.5) 0%, transparent 70%);
+      pointer-events: none;
     }
 
-    .podcast-quote-mark {
+    .tile::after {
+      content: '';
       position: absolute;
-      top: 152px;
-      left: 72px;
-      z-index: 4;
-      font-family: 'Instrument Serif', serif;
-      font-size: 160px;
-      line-height: 0.7;
-      color: rgba(96,165,250,0.12);
+      bottom: -120px;
+      left: -80px;
+      width: 380px;
+      height: 380px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(155,110,181,0.25) 0%, transparent 70%);
+      pointer-events: none;
     }
 
-    .podcast-quote {
-      position: absolute;
-      top: 222px;
-      left: 72px;
-      right: 72px;
-      z-index: 5;
-      font-family: 'Instrument Serif', serif;
-      font-size: 64px;
-      line-height: 1.08;
-      letter-spacing: -1.6px;
-      color: var(--text);
-    }
-
-    .podcast-quote em {
-      font-style: italic;
-      color: #93c5fd;
-    }
-
-    .podcast-tags {
-      position: absolute;
-      left: 72px;
-      right: 72px;
-      bottom: 176px;
-      z-index: 5;
+    .tile-inner {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
       display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+      flex-direction: column;
+      padding: 80px 72px 64px;
     }
 
-    .podcast-tag-chip {
-      display: inline-flex;
-      align-items: center;
+    .tile-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: auto;
+    }
+
+    .tile-logo {
+      font-family: var(--font-heading);
+      font-style: italic;
+      font-weight: 400;
+      font-size: 28px;
+      color: var(--lav-dp);
+      letter-spacing: -0.01em;
+    }
+
+    .tile-episode-badge {
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--lav-dp);
+      background: var(--lav-l);
+      padding: 8px 20px;
       border-radius: 999px;
-      padding: 9px 16px;
-      background: rgba(96,165,250,0.1);
-      border: 1px solid rgba(96,165,250,0.26);
-      color: rgba(191,219,254,0.9);
-      font-size: 13px;
-      font-weight: 500;
-      letter-spacing: 0.02em;
     }
 
-    .podcast-footer {
-      position: absolute;
-      left: 72px;
-      right: 72px;
-      bottom: 64px;
-      z-index: 5;
+    .tile-quote-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 20px 0;
+    }
+
+    .tile-quote-mark {
+      font-family: var(--font-heading);
+      font-size: 120px;
+      line-height: 0.6;
+      color: var(--lav);
+      opacity: 0.5;
+      margin-bottom: 16px;
+      user-select: none;
+    }
+
+    .tile-quote {
+      font-family: var(--font-heading);
+      font-size: 52px;
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--td);
+      letter-spacing: -0.02em;
+      max-width: 880px;
+    }
+
+    .tile-quote em {
+      color: var(--lav-dp);
+      font-style: italic;
+      font-weight: 400;
+    }
+
+    .tile-bottom {
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      gap: 24px;
-      padding-top: 22px;
-      border-top: 1px solid rgba(96,165,250,0.18);
+      margin-top: auto;
+      gap: 20px;
     }
 
-    .podcast-guest-block {
-      max-width: 68%;
+    .tile-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
-    .podcast-guest {
+    .tile-guest {
+      font-family: var(--font-body);
       font-size: 22px;
       font-weight: 600;
-      color: var(--text);
-      line-height: 1.2;
+      color: var(--td);
     }
 
-    .podcast-episode-title {
-      margin-top: 8px;
+    .tile-episode-title {
+      font-family: var(--font-body);
       font-size: 17px;
-      font-weight: 400;
-      color: var(--text-soft);
-      line-height: 1.35;
+      font-weight: 500;
+      color: var(--tl);
     }
 
-    .podcast-handle {
-      font-size: 16px;
+    .tile-tags {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tile-tag {
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--lav-dp);
+      background: var(--lav-l);
+      padding: 5px 14px;
+      border-radius: 20px;
+    }
+
+    .tile-handle {
+      font-family: var(--font-body);
+      font-size: 17px;
       font-weight: 500;
-      color: rgba(191,219,254,0.82);
+      color: var(--tl);
       text-align: right;
+      white-space: nowrap;
+    }
+
+    .tile-accent-line {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 8px;
+      background: linear-gradient(90deg, var(--lav-dp), var(--lav), var(--lav-l));
+      z-index: 2;
     }
   `,
   fields: [
-    {
-      id: "quote",
-      label: "Zitat",
-      type: "textarea",
-      multiline: true,
-      helpText: "Einzelne *Wörter* oder *Phrasen* mit einfachen Sternchen hervorheben.",
-    },
-    { id: "episodeNumber", label: "Folgennummer", type: "number" },
-    { id: "guest", label: "Gast", type: "text" },
-    { id: "episodeTitle", label: "Episodentitel", type: "text" },
-    {
-      id: "tags",
-      label: "Tags",
-      type: "text",
-      placeholder: "AMNOG, Market Access, Nutzenbewertung",
-      helpText: "Kommagetrennte Schlagwörter werden als Chips dargestellt.",
-    },
-    { id: "handle", label: "Handle", type: "text" },
-    { id: "showName", label: "Podcastname", type: "text" },
+    { id: 'quote', label: 'Zitat', type: 'textarea', multiline: true },
+    { id: 'episodeNumber', label: 'Folgennummer', type: 'number' },
+    { id: 'guest', label: 'Gast', type: 'text' },
+    { id: 'episodeTitle', label: 'Folgentitel', type: 'text' },
+    { id: 'tags', label: 'Tags (kommagetrennt)', type: 'text' },
+    { id: 'handle', label: 'Handle', type: 'text' },
+    { id: 'showName', label: 'Showname / Logo', type: 'text' },
   ],
   defaults: {
-    quote: "Wir brauchen *klare Evidenz* – aber auch den Mut, Versorgung *praktisch* zu denken.",
-    episodeNumber: "42",
-    guest: "Dr. Beispiel Gast",
-    episodeTitle: "Warum AMNOG-Kommunikation verständlicher werden muss",
-    tags: "AMNOG, Market Access, Nutzenbewertung",
-    handle: "@socialtool_podcast",
-    showName: "Socialtool Podcast",
+    quote: 'Wenn wir ehrlich auf unsere Herkunft schauen, verstehen wir uns und andere *viel besser.*',
+    episodeNumber: '3',
+    guest: 'Poliana Baumgarten',
+    episodeTitle: 'Auf engstem Raum – mit Polly',
+    tags: 'Kindheit, Migration, Interview',
+    handle: '@yasminpolat',
+    showName: 'Link in Bio',
   },
-  resolveFieldValues: (fieldValues) => ({
-    ...fieldValues,
-    episodeBadge: buildEpisodeBadge(fieldValues.episodeNumber ?? ''),
-    quoteHtml: buildQuoteHtml(fieldValues.quote ?? ''),
-    tagsHtml: buildTagsHtml(fieldValues.tags ?? ''),
-  }),
+  resolveFieldValues: (values) => {
+    const rawQuote = String(values.quote ?? '').trim();
+    const quoteHtml = rawQuote
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/\n/g, '<br>');
+
+    const tags = String(values.tags ?? '')
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean);
+
+    const tagsHtml = tags.map((tag) => `<span class="tile-tag">${tag}</span>`).join('');
+
+    const guest = String(values.guest ?? '').trim();
+    const guestDisplay = guest ? `— ${guest}` : '';
+
+    return {
+      ...values,
+      quoteHtml,
+      tagsHtml,
+      guestDisplay,
+    };
+  },
+  rawHtmlPlaceholders: ['quoteHtml', 'tagsHtml'],
 };
