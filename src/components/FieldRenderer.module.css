@@ -47,3 +47,48 @@
   border-color: rgba(232,184,75,0.4);
   background: rgba(255,255,255,0.05);
 }
+
+.imageField {
+  display: grid;
+  gap: 10px;
+}
+
+.imageActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.04);
+}
+
+.uploadButton {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font: inherit;
+  font-weight: 600;
+  color: #1a1020;
+  background: rgba(232,184,75,0.95);
+  cursor: pointer;
+}
+
+.uploadButton:hover {
+  background: rgba(232,184,75,1);
+}
+
+.uploadButton:focus-visible {
+  outline: 2px solid rgba(232,184,75,0.4);
+  outline-offset: 2px;
+}
+
+.imageStatus {
+  font-size: 0.88rem;
+  color: var(--gb-text-soft);
+}
+
+.hiddenInput {
+  display: none;
+}

@@ -1,5 +1,23 @@
 import type { GraphicTemplate } from './types';
 
+const photoPositionXPresets: Record<string, number> = {
+  links: 30,
+  mitte: 50,
+  rechts: 70,
+};
+
+const photoPositionYPresets: Record<string, number> = {
+  oben: 15,
+  mitte: 35,
+  unten: 60,
+};
+
+const overlayPresets: Record<string, number> = {
+  leicht: 45,
+  mittel: 65,
+  stark: 85,
+};
+
 export const podcastPhotoQuoteTileTemplate: GraphicTemplate = {
   id: 'podcast-photo-quote-tile',
   name: 'Podcast · Foto-Zitatekachel',
@@ -251,10 +269,42 @@ export const podcastPhotoQuoteTileTemplate: GraphicTemplate = {
     }
   `,
   fields: [
-    { id: 'photoSrc', label: 'Gast-Foto', type: 'image' as any },
-    { id: 'photoPositionY', label: 'Bildposition vertikal', type: 'number' },
-    { id: 'photoPositionX', label: 'Bildposition horizontal', type: 'number' },
-    { id: 'overlayStrength', label: 'Overlay-Stärke', type: 'number' },
+    {
+      id: 'photoSrc',
+      label: 'Gast-Foto',
+      type: 'image',
+      helpText: 'Am besten funktioniert ein Porträtfoto mit klarem Fokus auf der Person.',
+    },
+    {
+      id: 'photoPositionXPreset',
+      label: 'Bildausschnitt horizontal',
+      type: 'select',
+      options: [
+        { label: 'Links', value: 'links' },
+        { label: 'Mitte', value: 'mitte' },
+        { label: 'Rechts', value: 'rechts' },
+      ],
+    },
+    {
+      id: 'photoPositionYPreset',
+      label: 'Bildausschnitt vertikal',
+      type: 'select',
+      options: [
+        { label: 'Oben', value: 'oben' },
+        { label: 'Mitte', value: 'mitte' },
+        { label: 'Unten', value: 'unten' },
+      ],
+    },
+    {
+      id: 'overlayPreset',
+      label: 'Overlay-Intensität',
+      type: 'select',
+      options: [
+        { label: 'Leicht', value: 'leicht' },
+        { label: 'Mittel', value: 'mittel' },
+        { label: 'Stark', value: 'stark' },
+      ],
+    },
     { id: 'quote', label: 'Zitat', type: 'textarea', multiline: true },
     { id: 'episodeNumber', label: 'Folgennr.', type: 'number' },
     { id: 'guest', label: 'Gast', type: 'text' },
@@ -265,9 +315,9 @@ export const podcastPhotoQuoteTileTemplate: GraphicTemplate = {
   ],
   defaults: {
     photoSrc: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=1200&q=80',
-    photoPositionY: '15',
-    photoPositionX: '50',
-    overlayStrength: '70',
+    photoPositionXPreset: 'mitte',
+    photoPositionYPreset: 'oben',
+    overlayPreset: 'mittel',
     quote: 'Essen ist nie nur Essen. Es ist immer auch *eine Erinnerung an Zuhause.*',
     episodeNumber: '4',
     guest: 'Fikri Anıl Altıntaş',
@@ -300,9 +350,16 @@ export const podcastPhotoQuoteTileTemplate: GraphicTemplate = {
     const guest = String(values.guest ?? '').trim();
     const guestDisplay = guest ? `— ${guest}` : '';
 
-    const posX = Math.min(100, Math.max(0, Number(values.photoPositionX ?? 50)));
-    const posY = Math.min(100, Math.max(0, Number(values.photoPositionY ?? 15)));
-    const overlay = Math.min(100, Math.max(30, Number(values.overlayStrength ?? 70))) / 100;
+    const posX =
+      photoPositionXPresets[values.photoPositionXPreset ?? ''] ??
+      Math.min(100, Math.max(0, Number(values.photoPositionX ?? 50)));
+    const posY =
+      photoPositionYPresets[values.photoPositionYPreset ?? ''] ??
+      Math.min(100, Math.max(0, Number(values.photoPositionY ?? 15)));
+    const overlayStrength =
+      overlayPresets[values.overlayPreset ?? ''] ??
+      Math.min(100, Math.max(30, Number(values.overlayStrength ?? 65)));
+    const overlay = overlayStrength / 100;
 
     const overlayStyle = `background:
       linear-gradient(
