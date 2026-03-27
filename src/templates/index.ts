@@ -2,6 +2,7 @@ import { carouselSlideTemplate } from './carouselSlideTemplate';
 import { decisionOutTemplate } from './decisionOutTemplate';
 import { generalPostTemplate } from './generalPostTemplate';
 import { iqwigOutTemplate } from './iqwigOutTemplate';
+import { podcastPhotoQuoteTileTemplate } from './podcastPhotoQuoteTileTemplate';
 import { podcastQuoteTileTemplate } from './podcastQuoteTileTemplate';
 import { toWatchTemplate } from './toWatchTemplate';
 
@@ -11,6 +12,7 @@ export const GRAPHIC_TEMPLATES = [
   iqwigOutTemplate,
   carouselSlideTemplate,
   generalPostTemplate,
+  podcastPhotoQuoteTileTemplate,
   podcastQuoteTileTemplate,
 ];
 
@@ -23,4 +25,5 @@ export * from './decisionOutTemplate';
 export * from './iqwigOutTemplate';
 export * from './carouselSlideTemplate';
 export * from './generalPostTemplate';
+export * from './podcastPhotoQuoteTileTemplate';
 export * from './podcastQuoteTileTemplate';
