@@ -2,6 +2,8 @@ import type { GraphicTemplate } from './types';
 import { sharedBaseCss } from './sharedBaseCss';
 import { escapeTemplateHtml } from '../utils/templateContent';
 
+const QUOTE_HIGHLIGHT_PATTERN = /(?<!\*)\*([^*]+)\*(?!\*)/g;
+
 function buildEpisodeBadge(episodeNumber: string): string {
   const normalizedEpisodeNumber = episodeNumber.trim();
   return normalizedEpisodeNumber ? `FOLGE #${normalizedEpisodeNumber}` : 'FOLGE';
@@ -11,12 +13,13 @@ function buildQuoteHtml(quote: string): string {
   let lastIndex = 0;
   let highlightedQuote = '';
 
-  quote.replace(/\*([^*]+)\*/g, (match, highlightedText: string, offset: number) => {
+  for (const match of quote.matchAll(QUOTE_HIGHLIGHT_PATTERN)) {
+    const [fullMatch, highlightedText] = match;
+    const offset = match.index ?? 0;
     highlightedQuote += escapeTemplateHtml(quote.slice(lastIndex, offset));
     highlightedQuote += `<em>${escapeTemplateHtml(highlightedText)}</em>`;
-    lastIndex = offset + match.length;
-    return match;
-  });
+    lastIndex = offset + fullMatch.length;
+  }
 
   highlightedQuote += escapeTemplateHtml(quote.slice(lastIndex));
   return highlightedQuote;
@@ -181,7 +184,7 @@ export const podcastQuoteTileTemplate: GraphicTemplate = {
       label: "Zitat",
       type: "textarea",
       multiline: true,
-      helpText: "Mit *Sternchen* können einzelne Wörter oder Phrasen hervorgehoben werden.",
+      helpText: "Einzelne *Wörter* oder *Phrasen* mit einfachen Sternchen hervorheben.",
     },
     { id: "episodeNumber", label: "Folgennummer", type: "number" },
     { id: "guest", label: "Gast", type: "text" },

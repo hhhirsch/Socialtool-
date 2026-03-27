@@ -8,7 +8,6 @@ import {
   getDefaultTemplateForCategory,
   getTemplateById,
   getTemplateDefaults,
-  getTemplatesByCategory,
   getGroupFieldIndices,
   getGroupFieldKey,
   isTemplateFieldGroup,
@@ -117,7 +116,7 @@ export function useAppState() {
         return currentState;
       }
 
-      const nextTemplate = getTemplatesByCategory(category)[0] ?? getDefaultTemplateForCategory(category);
+      const nextTemplate = getDefaultTemplateForCategory(category);
 
       return {
         ...currentState,

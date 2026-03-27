@@ -105,7 +105,7 @@ export function getTemplateById(id: string): GraphicTemplate {
 }
 
 export function getDefaultTemplateForCategory(category: TemplateCategory): GraphicTemplate {
-  return getTemplatesByCategory(category)[0] ?? GRAPHIC_TEMPLATES[0];
+  return GRAPHIC_TEMPLATES.find((template) => template.category === category) ?? GRAPHIC_TEMPLATES[0];
 }
 
 export function getTemplateDefaults(template: GraphicTemplate): FieldValues {
