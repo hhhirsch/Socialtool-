@@ -1,3 +1,4 @@
+import { businessPhotoQuoteTileTemplate } from './businessPhotoQuoteTileTemplate';
 import { carouselSlideTemplate } from './carouselSlideTemplate';
 import { decisionOutTemplate } from './decisionOutTemplate';
 import { generalPostTemplate } from './generalPostTemplate';
@@ -14,6 +15,7 @@ export const GRAPHIC_TEMPLATES = [
   iqwigOutTemplate,
   carouselSlideTemplate,
   generalPostTemplate,
+  businessPhotoQuoteTileTemplate,
   podcastPhotoQuoteTileTemplate,
   podcastQuoteTileTemplate,
   podcastChatTileTemplate,
@@ -29,6 +31,7 @@ export * from './decisionOutTemplate';
 export * from './iqwigOutTemplate';
 export * from './carouselSlideTemplate';
 export * from './generalPostTemplate';
+export * from './businessPhotoQuoteTileTemplate';
 export * from './podcastPhotoQuoteTileTemplate';
 export * from './podcastChatTileTemplate';
 export * from './podcastQuoteTileTemplate';
