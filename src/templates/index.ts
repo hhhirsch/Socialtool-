@@ -15,6 +15,7 @@ export const GRAPHIC_TEMPLATES = [
   generalPostTemplate,
   podcastPhotoQuoteTileTemplate,
   podcastQuoteTileTemplate,
+  podcastChatTileTemplate,
 ];
 
 export const DEFAULT_TEMPLATE_ID = GRAPHIC_TEMPLATES[0].id;
@@ -27,4 +28,5 @@ export * from './iqwigOutTemplate';
 export * from './carouselSlideTemplate';
 export * from './generalPostTemplate';
 export * from './podcastPhotoQuoteTileTemplate';
+export * from './podcastChatTileTemplate';
 export * from './podcastQuoteTileTemplate';
