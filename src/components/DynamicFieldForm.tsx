@@ -21,6 +21,7 @@ function renderGroup(
   const indices = getGroupFieldIndices(group, values);
   const minimumItems = group.minItems ?? 1;
   const canAddItem = !group.maxItems || indices.length < group.maxItems;
+  const itemLabel = group.itemLabel ?? 'Gruppe';
 
   return (
     <section key={group.id} className={styles.groupSection}>
@@ -46,7 +47,9 @@ function renderGroup(
           return (
             <div key={`${group.id}-${index}`} className={styles.groupCard}>
               <div className={styles.groupCardHeader}>
-                <span className={styles.groupCardTitle}>Gruppe {index + 1}</span>
+                <span className={styles.groupCardTitle}>
+                  {itemLabel} {index + 1}
+                </span>
                 <button
                   type="button"
                   className={styles.groupRemoveButton}

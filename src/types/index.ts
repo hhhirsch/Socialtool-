@@ -34,6 +34,7 @@ export interface TemplateFieldGroup {
   label: string;
   type: 'group';
   fields: TemplateField[];
+  itemLabel?: string;
   minItems?: number;
   maxItems?: number;
   addButtonLabel?: string;
