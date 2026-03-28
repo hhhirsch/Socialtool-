@@ -22,11 +22,13 @@ function normalizeSlides(
   template: GraphicTemplate,
   slides: TemplateSlideRenderDefinition[]
 ): ResolvedTemplateSlide[] {
+  const filenamePadding = Math.max(2, String(slides.length).length);
+
   return slides.map((slide, index) => ({
     ...slide,
     css: slide.css ?? template.css,
     label: slide.label ?? `${index + 1} / ${slides.length}`,
-    filename: slide.filename ?? `slide-${String(index + 1).padStart(2, '0')}`,
+    filename: slide.filename ?? `slide-${String(index + 1).padStart(filenamePadding, '0')}`,
   }));
 }
 

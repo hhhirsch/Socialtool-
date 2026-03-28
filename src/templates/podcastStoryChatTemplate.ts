@@ -25,7 +25,7 @@ function isEmojiOnlyMessage(value: string): boolean {
 }
 
 function extractMessageTime(line: string): { content: string; time: string } {
-  const timeMatch = line.match(/\|\s*([0-2]?\d:\d{2})\s*$/);
+  const timeMatch = line.match(/\|\s*(([01]?\d|2[0-3]):\d{2})\s*$/);
   if (!timeMatch) {
     return { content: line.trim(), time: '' };
   }
