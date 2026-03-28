@@ -26,12 +26,7 @@ export const podcastPhotoQuoteTileTemplate: GraphicTemplate = {
   supportedPresetIds: ['1080x1080'],
   htmlTemplate: `
     <div class="tile">
-      <img
-        class="tile-photo"
-        src="{{photoSrc}}"
-        alt="Gast-Foto"
-        style="object-position: {{photoPosition}};"
-      >
+      <div class="tile-photo" style="{{photoStyle}}"></div>
       <div class="tile-overlay" style="{{overlayStyle}}"></div>
 
       <div class="tile-content">
@@ -93,10 +88,9 @@ export const podcastPhotoQuoteTileTemplate: GraphicTemplate = {
     .tile-photo {
       position: absolute;
       inset: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center top;
+      background-repeat: no-repeat;
+      background-size: cover;
+      background-position: center top;
       z-index: 1;
     }
 
@@ -372,14 +366,24 @@ export const podcastPhotoQuoteTileTemplate: GraphicTemplate = {
         rgba(42, 21, 64, ${0.99 * overlay}) 100%
       );`;
 
+    const safePhotoSrc = String(values.photoSrc ?? '')
+      .replace(/\\/g, '\\\\')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, "\\'")
+      .replace(/\(/g, '\\(')
+      .replace(/\)/g, '\\)')
+      .replace(/\n/g, '');
+
+    const photoStyle = `background-image: url("${safePhotoSrc}"); background-position: ${posX}% ${posY}%;`;
+
     return {
       ...values,
       quoteHtml,
       tagsHtml,
       guestDisplay,
-      photoPosition: `${posX}% ${posY}%`,
+      photoStyle,
       overlayStyle,
     };
   },
-  rawHtmlPlaceholders: ['quoteHtml', 'tagsHtml'],
+  rawHtmlPlaceholders: ['quoteHtml', 'tagsHtml', 'photoStyle'],
 };
