@@ -366,15 +366,10 @@ export const podcastPhotoQuoteTileTemplate: GraphicTemplate = {
         rgba(42, 21, 64, ${0.99 * overlay}) 100%
       );`;
 
-    const safePhotoSrc = String(values.photoSrc ?? '')
-      .replace(/\\/g, '\\\\')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, "\\'")
-      .replace(/\(/g, '\\(')
-      .replace(/\)/g, '\\)')
-      .replace(/\n/g, '');
-
-    const photoStyle = `background-image: url("${safePhotoSrc}"); background-position: ${posX}% ${posY}%;`;
+    const photoSrc = String(values.photoSrc ?? '').trim();
+    const photoStyle = photoSrc
+      ? `background-image: url('${photoSrc}'); background-position: ${posX}% ${posY}%;`
+      : `background-image: none; background-position: ${posX}% ${posY}%;`;
 
     return {
       ...values,
