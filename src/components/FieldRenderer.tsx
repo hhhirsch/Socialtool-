@@ -9,6 +9,43 @@ interface Props {
   onChange: (fieldId: string, value: string) => void;
 }
 
+function loadImage(source: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error('Bild konnte nicht geladen werden.'));
+    image.src = source;
+  });
+}
+
+async function normalizeImageFile(file: File): Promise<string> {
+  const objectUrl = URL.createObjectURL(file);
+
+  try {
+    const image = await loadImage(objectUrl);
+    const { naturalWidth, naturalHeight } = image;
+
+    if (!naturalWidth || !naturalHeight) {
+      throw new Error('Bildgröße konnte nicht ermittelt werden.');
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = naturalWidth;
+    canvas.height = naturalHeight;
+
+    const context = canvas.getContext('2d');
+    if (!context) {
+      throw new Error('Canvas-Kontext konnte nicht erstellt werden.');
+    }
+
+    context.drawImage(image, 0, 0, naturalWidth, naturalHeight);
+    return canvas.toDataURL('image/png');
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 export function FieldRenderer({ field, value, values, onChange }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFileName, setSelectedFileName] = useState('');
@@ -28,23 +65,21 @@ export function FieldRenderer({ field, value, values, onChange }: Props) {
     ) => onChange(field.id, event.target.value),
   };
 
-  const handleImageUpload = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    event.target.value = '';
+
     if (!file) {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result !== 'string') {
-        return;
-      }
-
-      onChange(field.id, reader.result);
+    try {
+      const normalizedImage = await normalizeImageFile(file);
+      onChange(field.id, normalizedImage);
       setSelectedFileName(file.name);
-    };
-    reader.readAsDataURL(file);
-    event.target.value = '';
+    } catch {
+      setSelectedFileName('');
+    }
   };
 
   const imageStatus = selectedFileName
