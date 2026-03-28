@@ -140,17 +140,11 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
   htmlTemplate: '',
   css: `
     :root {
-      --lav: #c4a0d0;
-      --lav-l: #e8d5f0;
-      --lav-d: #9b6eb5;
-      --lav-dp: #6b3f8a;
-      --bg: #f5eefa;
-      --bg-chat: #0f0820;
-      --bg-chat-2: #1d1035;
-      --td: #ffffff;
-      --tm: #d8cbe7;
-      --tl: #b89ccf;
-      --green: #47d3a1;
+      --lav: #9b72cb;
+      --lav-l: #ede5f5;
+      --lav-d: #7b4fb5;
+      --lav-dp: #5c3a8a;
+      --bg-chat: #ece5f4;
       --font-heading: 'Fraunces', Georgia, serif;
       --font-body: 'DM Sans', system-ui, sans-serif;
     }
@@ -167,12 +161,9 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
       position: relative;
       overflow: hidden;
       flex-shrink: 0;
-      background:
-        radial-gradient(circle at 85% 12%, rgba(140, 87, 197, 0.42) 0%, transparent 18%),
-        radial-gradient(circle at 8% 82%, rgba(71, 211, 161, 0.14) 0%, transparent 16%),
-        linear-gradient(180deg, #2a163d 0%, #12091f 28%, #090510 100%);
+      background: var(--bg-chat);
       font-family: var(--font-body);
-      color: var(--td);
+      color: #1a0d2e;
     }
 
     .story::before {
@@ -180,8 +171,8 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
       position: absolute;
       inset: 0;
       background:
-        radial-gradient(ellipse at 14% 88%, rgba(71,211,161,0.08) 0%, transparent 24%),
-        radial-gradient(ellipse at 84% 12%, rgba(196,160,208,0.12) 0%, transparent 24%);
+        radial-gradient(ellipse at 18% 28%, rgba(190,160,230,0.28) 0%, transparent 42%),
+        radial-gradient(ellipse at 82% 72%, rgba(210,180,240,0.22) 0%, transparent 38%);
       pointer-events: none;
       z-index: 0;
     }
@@ -202,7 +193,7 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
       align-items: center;
       font-size: 17px;
       font-weight: 700;
-      color: #ffffff;
+      color: #1a0d2e;
       flex-shrink: 0;
     }
 
@@ -210,14 +201,13 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
       display: flex;
       gap: 10px;
       align-items: center;
-      color: #ffffff;
     }
 
     .status-pill {
       width: 24px;
       height: 12px;
       border-radius: 999px;
-      background: rgba(255,255,255,0.92);
+      background: rgba(42,21,64,0.55);
     }
 
     .dynamic-island {
@@ -241,49 +231,54 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
 
     .progress-bar {
       flex: 1;
-      height: 6px;
+      height: 4px;
       border-radius: 999px;
-      background: rgba(255,255,255,0.18);
+      background: rgba(100,60,150,0.18);
       overflow: hidden;
     }
 
-    .progress-fill {
+    .progress-fill,
+    .progress-fill-light {
       width: 100%;
       height: 100%;
-      background: #ffffff;
+      background: #7b4fb5;
       border-radius: 999px;
       display: none;
     }
 
     .progress-bar.done .progress-fill,
-    .progress-bar.active .progress-fill {
+    .progress-bar.active .progress-fill,
+    .progress-bar.done .progress-fill-light,
+    .progress-bar.active .progress-fill-light {
       display: block;
     }
 
     .story-chat-header {
-      margin: 24px 42px 0;
-      padding: 26px 30px;
+      margin: 28px 42px 0;
+      padding: 0 8px;
       display: flex;
       align-items: center;
-      gap: 18px;
-      border-radius: 40px;
-      background: rgba(255,255,255,0.10);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255,255,255,0.06);
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .story-header-back {
+      font-size: 36px;
+      color: #7b4fb5;
+      line-height: 1;
       flex-shrink: 0;
     }
 
     .story-avatar {
-      width: 62px;
-      height: 62px;
+      width: 54px;
+      height: 54px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #d6a4ff, #8d54d9);
+      background: linear-gradient(135deg, #c4a0d0, #8254b8);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #111111;
-      font-size: 18px;
+      color: #ffffff;
+      font-size: 16px;
       font-weight: 800;
       line-height: 1.05;
       text-align: center;
@@ -293,34 +288,30 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
     .story-header-info {
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 3px;
     }
 
     .story-chat-name {
-      font-size: 24px;
+      font-size: 22px;
       font-weight: 700;
-      color: #ffffff;
+      color: #1a0d2e;
     }
 
     .story-chat-status {
-      font-size: 14px;
-      color: rgba(255,255,255,0.76);
+      font-size: 13px;
+      color: #7b5aaa;
       font-weight: 500;
     }
 
     .story-header-right {
       margin-left: auto;
-      font-size: 34px;
-      color: rgba(255,255,255,0.72);
+      font-size: 30px;
+      color: #7b5aaa;
       line-height: 1;
     }
 
     .story-panel {
       flex: 1;
-      margin: 24px 42px 0;
-      border-radius: 42px;
-      background: linear-gradient(180deg, rgba(7,2,18,0.88) 0%, rgba(12,4,24,0.96) 100%);
-      border: 1px solid rgba(255,255,255,0.04);
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -329,12 +320,12 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
 
     .story-badge {
       align-self: flex-start;
-      margin: 32px 32px 0;
-      padding: 12px 20px;
+      margin: 22px 42px 0;
+      padding: 10px 18px;
       border-radius: 999px;
-      background: rgba(196,160,208,0.24);
-      color: #d8cbe7;
-      font-size: 16px;
+      background: rgba(123,79,181,0.12);
+      color: #6b3fa0;
+      font-size: 15px;
       font-weight: 700;
       letter-spacing: 0.02em;
       text-transform: uppercase;
@@ -342,17 +333,17 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
 
     .story-messages {
       flex: 1;
-      padding: 22px 30px 16px;
+      padding: 22px 42px 16px;
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
-      gap: 16px;
+      gap: 14px;
       overflow: hidden;
     }
 
     .s-msg {
       max-width: 78%;
-      padding: 20px 24px 14px;
+      padding: 18px 22px 12px;
       font-size: 24px;
       line-height: 1.42;
       position: relative;
@@ -367,24 +358,24 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
 
     .s-msg-in {
       align-self: flex-start;
-      background: #f3f1f4;
-      color: #23192f;
-      border-radius: 26px 26px 26px 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      background: #ffffff;
+      color: #1a0d2e;
+      border-radius: 22px 22px 22px 8px;
+      box-shadow: 0 2px 12px rgba(80,40,120,0.08);
     }
 
     .s-msg-out {
       align-self: flex-end;
-      background: linear-gradient(135deg, #a952ff 0%, #7f45f0 100%);
+      background: #5c3a8a;
       color: #ffffff;
-      border-radius: 26px 26px 10px 26px;
-      box-shadow: 0 6px 20px rgba(127,69,240,0.24);
+      border-radius: 22px 22px 8px 22px;
+      box-shadow: 0 4px 16px rgba(80,40,120,0.18);
     }
 
     .s-msg-time {
-      font-size: 14px;
-      opacity: 0.58;
-      margin-top: 8px;
+      font-size: 13px;
+      opacity: 0.55;
+      margin-top: 6px;
       display: block;
       font-weight: 600;
     }
@@ -403,54 +394,70 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
 
     .s-msg-typing {
       align-self: flex-start;
-      background: #f3f1f4;
-      border-radius: 26px 26px 26px 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-      padding: 20px 24px;
+      background: #ffffff;
+      border-radius: 22px 22px 22px 8px;
+      box-shadow: 0 2px 12px rgba(80,40,120,0.08);
+      padding: 18px 24px;
       display: flex;
       gap: 8px;
       align-items: center;
       opacity: 0;
       animation: msgAppear 0.35s ease-out forwards;
-      max-width: 160px;
+      max-width: 140px;
     }
 
     .s-typing-dot {
       width: 12px;
       height: 12px;
-      background: rgba(42,21,64,0.28);
+      background: rgba(80,40,120,0.22);
       border-radius: 50%;
     }
 
     .story-input-wrap {
-      padding: 0 30px 24px;
+      padding: 0 42px 32px;
     }
 
     .story-input-bar {
       display: flex;
       align-items: center;
       gap: 14px;
-      margin-bottom: 22px;
     }
 
     .story-input-field {
       flex: 1;
-      height: 68px;
+      height: 64px;
       border-radius: 999px;
-      border: 1.5px solid rgba(255,255,255,0.10);
-      background: rgba(4,2,12,0.72);
+      border: 1.5px solid rgba(123,79,181,0.2);
+      background: #ffffff;
       padding: 0 28px;
-      font-size: 18px;
-      color: rgba(255,255,255,0.38);
+      font-size: 17px;
+      color: rgba(60,30,90,0.45);
       display: flex;
       align-items: center;
+      gap: 0;
+    }
+
+    .s-input-label {
+      font-size: 17px;
+      color: rgba(60,30,90,0.4);
+      font-weight: 500;
+      flex-shrink: 0;
+      padding-right: 14px;
+      border-right: 1.5px solid rgba(123,79,181,0.15);
+      margin-right: 14px;
+    }
+
+    .s-input-hint {
+      font-size: 17px;
+      color: rgba(60,30,90,0.38);
+      flex: 1;
     }
 
     .story-send-btn {
-      width: 68px;
-      height: 68px;
+      width: 64px;
+      height: 64px;
       border-radius: 50%;
-      background: #47d3a1;
+      background: #7b4fb5;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -458,37 +465,18 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
     }
 
     .story-send-btn svg {
-      width: 24px;
-      height: 24px;
-      fill: #08120f;
+      width: 22px;
+      height: 22px;
+      fill: #ffffff;
       transform: translateX(2px);
     }
 
     .story-footer-card {
-      border-radius: 28px;
-      background: rgba(4,2,12,0.72);
-      border: 1px solid rgba(255,255,255,0.06);
-      padding: 22px 26px 24px;
-    }
-
-    .story-footer-kicker {
-      font-size: 14px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      color: #d8cbe7;
-      text-transform: uppercase;
-      margin-bottom: 10px;
-    }
-
-    .story-footer-title {
-      font-size: 28px;
-      line-height: 1.22;
-      font-weight: 700;
-      color: #ffffff;
+      display: none;
     }
 
     .story-brand-row {
-      padding: 22px 42px 36px;
+      padding: 14px 42px 40px;
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
@@ -499,14 +487,14 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
       font-family: var(--font-heading);
       font-style: italic;
       font-weight: 400;
-      font-size: 28px;
-      color: #d5b2ff;
+      font-size: 26px;
+      color: #7b5aaa;
     }
 
     .story-handle {
       font-size: 18px;
       font-weight: 700;
-      color: rgba(255,255,255,0.82);
+      color: rgba(42,21,64,0.65);
     }
 
     .cta-slide {
@@ -516,10 +504,17 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
       flex-direction: column;
       padding: 0;
       position: relative;
+      background: var(--bg-chat);
+    }
+
+    .cta-slide::before {
+      content: '';
+      position: absolute;
+      inset: 0;
       background:
-        radial-gradient(circle at 85% 12%, rgba(140, 87, 197, 0.42) 0%, transparent 18%),
-        radial-gradient(circle at 8% 82%, rgba(71, 211, 161, 0.14) 0%, transparent 16%),
-        linear-gradient(180deg, #2a163d 0%, #12091f 28%, #090510 100%);
+        radial-gradient(ellipse at 18% 28%, rgba(190,160,230,0.28) 0%, transparent 42%),
+        radial-gradient(ellipse at 82% 72%, rgba(210,180,240,0.22) 0%, transparent 38%);
+      pointer-events: none;
     }
 
     .cta-inner {
@@ -527,15 +522,14 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
       display: flex;
       flex-direction: column;
       padding: 0 42px 36px;
+      position: relative;
+      z-index: 1;
     }
 
     .cta-section {
       flex: 1;
       margin: 24px 0 0;
-      border-radius: 42px;
-      background: linear-gradient(180deg, rgba(7,2,18,0.88) 0%, rgba(12,4,24,0.96) 100%);
-      border: 1px solid rgba(255,255,255,0.04);
-      padding: 0 36px 40px;
+      padding: 0 0 40px;
       display: flex;
       flex-direction: column;
     }
@@ -543,11 +537,11 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
     .cta-badge {
       align-self: flex-start;
       margin-top: 44px;
-      padding: 12px 20px;
+      padding: 10px 20px;
       border-radius: 999px;
-      background: rgba(71,211,161,0.14);
-      color: #47d3a1;
-      font-size: 16px;
+      background: rgba(123,79,181,0.12);
+      color: #6b3fa0;
+      font-size: 15px;
       font-weight: 800;
       letter-spacing: 0.06em;
       text-transform: uppercase;
@@ -555,13 +549,13 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
 
     .cta-card {
       margin-top: 30px;
-      border-radius: 34px;
-      background: rgba(4,2,12,0.72);
-      border: 1px solid rgba(255,255,255,0.06);
-      padding: 36px 38px;
+      border-radius: 28px;
+      background: rgba(255,255,255,0.82);
+      border: 1px solid rgba(123,79,181,0.14);
+      padding: 32px 34px;
       display: flex;
       flex-direction: column;
-      gap: 22px;
+      gap: 20px;
     }
 
     .cta-card-top {
@@ -571,10 +565,10 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
     }
 
     .cta-play-circle {
-      width: 124px;
-      height: 124px;
+      width: 110px;
+      height: 110px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #d6a4ff, #8d54d9);
+      background: linear-gradient(135deg, #c4a0d0, #7b4fb5);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -582,9 +576,9 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
     }
 
     .cta-play-circle svg {
-      width: 42px;
-      height: 42px;
-      fill: #1a1020;
+      width: 38px;
+      height: 38px;
+      fill: #ffffff;
       transform: translateX(2px);
     }
 
@@ -594,45 +588,45 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
 
     .cta-heading {
       font-family: var(--font-heading);
-      font-size: 74px;
+      font-size: 64px;
       font-weight: 700;
       line-height: 1.06;
       letter-spacing: -0.03em;
-      color: #ffffff;
+      color: #1a0d2e;
       margin-bottom: 14px;
     }
 
     .cta-episode {
-      font-size: 24px;
-      color: rgba(255,255,255,0.72);
+      font-size: 22px;
+      color: rgba(42,21,64,0.62);
       line-height: 1.45;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     .cta-sub {
-      font-size: 22px;
-      color: rgba(255,255,255,0.82);
+      font-size: 20px;
+      color: rgba(42,21,64,0.72);
     }
 
     .cta-button {
       margin-top: 34px;
       width: 100%;
-      min-height: 92px;
+      min-height: 88px;
       border-radius: 999px;
-      background: #47d3a1;
+      background: #6b3fa0;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 30px;
+      font-size: 28px;
       font-weight: 800;
-      color: #08120f;
+      color: #ffffff;
     }
 
     .cta-handle {
       text-align: center;
-      font-size: 22px;
-      color: rgba(255,255,255,0.76);
-      margin-top: 40px;
+      font-size: 20px;
+      color: rgba(42,21,64,0.55);
+      margin-top: 36px;
     }
 
     .story-accent-line {
@@ -640,8 +634,8 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
       bottom: 0;
       left: 0;
       right: 0;
-      height: 6px;
-      background: linear-gradient(90deg, #2f8d72, #8d54d9, #d6a4ff);
+      height: 5px;
+      background: linear-gradient(90deg, #9b72cb, #c4a0d0, #7b4fb5);
       z-index: 20;
     }
   `,
@@ -747,12 +741,13 @@ TYPING`,
               </div>
 
               <div class="story-chat-header">
+                <div class="story-header-back" aria-hidden="true">‹</div>
                 <div class="story-avatar">${escapeHtml(avatar)}</div>
                 <div class="story-header-info">
                   <div class="story-chat-name">${chatName}</div>
                   <div class="story-chat-status">${chatStatus}</div>
                 </div>
-                <div class="story-header-right">…</div>
+                <div class="story-header-right" aria-hidden="true">📞</div>
               </div>
 
               <div class="story-panel">
@@ -764,17 +759,15 @@ TYPING`,
 
                 <div class="story-input-wrap">
                   <div class="story-input-bar">
-                    <div class="story-input-field">${inputPlaceholder}</div>
+                    <div class="story-input-field">
+                      <span class="s-input-label">iMessage</span>
+                      <span class="s-input-hint">${inputPlaceholder}</span>
+                    </div>
                     <div class="story-send-btn">
                       <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
                       </svg>
                     </div>
-                  </div>
-
-                  <div class="story-footer-card">
-                    <div class="story-footer-kicker">${showName}</div>
-                    <div class="story-footer-title">${episodeTitle}</div>
                   </div>
                 </div>
               </div>
@@ -815,12 +808,13 @@ TYPING`,
             </div>
 
             <div class="story-chat-header">
+              <div class="story-header-back" aria-hidden="true">‹</div>
               <div class="story-avatar">${escapeHtml(avatar)}</div>
               <div class="story-header-info">
                 <div class="story-chat-name">${chatName}</div>
                 <div class="story-chat-status">${chatStatus}</div>
               </div>
-              <div class="story-header-right">…</div>
+              <div class="story-header-right" aria-hidden="true">📞</div>
             </div>
 
             <div class="cta-inner">
