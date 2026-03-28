@@ -52,22 +52,48 @@ function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
   });
 }
 
+function resolveAfterTimeout(timeoutMs: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, timeoutMs);
+  });
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T | undefined> {
+  return new Promise((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      resolve(undefined);
+    }, timeoutMs);
+
+    promise
+      .then((value) => {
+        window.clearTimeout(timeoutId);
+        resolve(value);
+      })
+      .catch((error: unknown) => {
+        window.clearTimeout(timeoutId);
+        reject(error);
+      });
+  });
+}
+
 async function waitForImageToBeReady(image: HTMLImageElement): Promise<void> {
   if (!image.complete) {
     await new Promise<void>((resolve) => {
-      const cleanup = () => {
-        window.clearTimeout(timeoutId);
-        image.removeEventListener('load', handleReady);
-        image.removeEventListener('error', handleReady);
-      };
-      const handleReady = () => {
-        cleanup();
-        resolve();
-      };
       const timeoutId = window.setTimeout(() => {
         cleanup();
         resolve();
       }, EXPORT_IMAGE_READY_TIMEOUT_MS);
+
+      function cleanup(): void {
+        window.clearTimeout(timeoutId);
+        image.removeEventListener('load', handleReady);
+        image.removeEventListener('error', handleReady);
+      }
+
+      function handleReady(): void {
+        cleanup();
+        resolve();
+      }
 
       image.addEventListener('load', handleReady, { once: true });
       image.addEventListener('error', handleReady, { once: true });
@@ -76,12 +102,7 @@ async function waitForImageToBeReady(image: HTMLImageElement): Promise<void> {
 
   if (typeof image.decode === 'function') {
     try {
-      await Promise.race([
-        image.decode(),
-        new Promise<void>((resolve) => {
-          window.setTimeout(resolve, EXPORT_IMAGE_READY_TIMEOUT_MS);
-        }),
-      ]);
+      await withTimeout(image.decode(), EXPORT_IMAGE_READY_TIMEOUT_MS);
     } catch {
       // Ignore decode failures and continue exporting.
     }
@@ -142,9 +163,7 @@ export async function exportPng(
     if (photo instanceof HTMLImageElement) {
       await waitForImageToBeReady(photo);
     }
-    await new Promise<void>((resolve) => {
-      window.setTimeout(resolve, EXPORT_RENDER_SETTLE_DELAY_MS);
-    });
+    await resolveAfterTimeout(EXPORT_RENDER_SETTLE_DELAY_MS);
     let dataUrl: string | null = null;
     try {
       const canvas = await html2canvas(graphicRoot, {
