@@ -51,6 +51,52 @@ function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
   });
 }
 
+async function waitForImageReady(image: HTMLImageElement): Promise<void> {
+  if (image.complete && image.naturalWidth > 0) {
+    if (typeof image.decode === 'function') {
+      try {
+        await image.decode();
+      } catch {
+        // Ignore decode failures for already loaded images and continue exporting.
+      }
+    }
+
+    return;
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const handleLoad = () => {
+      cleanup();
+      resolve();
+    };
+    const handleError = () => {
+      cleanup();
+      reject(new Error('Bild konnte für den Export nicht geladen werden.'));
+    };
+    const cleanup = () => {
+      image.removeEventListener('load', handleLoad);
+      image.removeEventListener('error', handleError);
+    };
+
+    image.addEventListener('load', handleLoad, { once: true });
+    image.addEventListener('error', handleError, { once: true });
+  });
+
+  if (typeof image.decode === 'function') {
+    try {
+      await image.decode();
+    } catch {
+      // Ignore decode failures after a successful load event and continue exporting.
+    }
+  }
+}
+
+async function waitForImagesReady(container: ParentNode): Promise<void> {
+  const images = Array.from(container.querySelectorAll('img'));
+
+  await Promise.all(images.map((image) => waitForImageReady(image)));
+}
+
 /**
  * Exports the isolated graphic in its original preset resolution.
  */
@@ -101,6 +147,7 @@ export async function exportPng(
 
     reportExportStatus(PNG_EXPORT_STATUS.exportRootFound, onStatus);
     applyGeneralPostTitleFit(graphicRoot);
+    await waitForImagesReady(graphicRoot);
     await new Promise<void>((resolve) => {
       window.setTimeout(resolve, EXPORT_RENDER_SETTLE_DELAY_MS);
     });
