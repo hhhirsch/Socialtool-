@@ -54,8 +54,7 @@ export const businessPhotoQuoteTileTemplate: GraphicTemplate = {
         <div class="bpqt-person-context">{{personContextHtml}}</div>
       </div>
 
-      <div class="bottom">
-        <div class="publisher">{{personRoleHtml}}</div>
+      <div class="bottom bpqt-bottom">
         <div class="brand">{{brand}}</div>
       </div>
     </div>
@@ -204,6 +203,10 @@ export const businessPhotoQuoteTileTemplate: GraphicTemplate = {
       font-size: 16px;
       line-height: 1.45;
       color: var(--text-soft);
+    }
+
+    .bpqt-bottom {
+      justify-content: flex-end;
     }
   `,
   fields: [
