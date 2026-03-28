@@ -5,6 +5,7 @@ import { iqwigOutTemplate } from './iqwigOutTemplate';
 import { podcastPhotoQuoteTileTemplate } from './podcastPhotoQuoteTileTemplate';
 import { podcastQuoteTileTemplate } from './podcastQuoteTileTemplate';
 import { toWatchTemplate } from './toWatchTemplate';
+import { podcastChatTileTemplate } from './podcastChatTileTemplate';
 
 export const GRAPHIC_TEMPLATES = [
   toWatchTemplate,
