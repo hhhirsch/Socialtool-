@@ -77,8 +77,10 @@ export function FieldRenderer({ field, value, values, onChange }: Props) {
       const normalizedImage = await normalizeImageFile(file);
       onChange(field.id, normalizedImage);
       setSelectedFileName(file.name);
-    } catch {
-      setSelectedFileName('Bild konnte nicht verarbeitet werden');
+    } catch (error) {
+      setSelectedFileName(
+        error instanceof Error ? error.message : 'Bild konnte nicht verarbeitet werden'
+      );
     }
   };
 
