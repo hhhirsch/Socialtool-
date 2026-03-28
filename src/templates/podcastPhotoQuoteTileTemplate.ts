@@ -1,4 +1,6 @@
 import type { GraphicTemplate } from './types';
+import { sharedBaseCss } from './sharedBaseCss';
+import { escapeTemplateHtml } from '../utils/templateContent';
 
 const photoPositionXPresets: Record<string, number> = {
   links: 30,
@@ -20,254 +22,155 @@ const overlayPresets: Record<string, number> = {
 
 export const podcastPhotoQuoteTileTemplate: GraphicTemplate = {
   id: 'podcast-photo-quote-tile',
-  name: 'Podcast · Foto-Zitatekachel',
-  description: 'Quadratische Instagram-Kachel mit Foto, Overlay und Zitat für Podcast-Episoden.',
-  category: 'podcast',
+  name: 'Business · Foto-Zitatekachel',
+  description: 'Quadratische Business-Kachel mit Foto, Overlay und Executive Quote im Gold/Navy-System.',
+  category: 'business',
   supportedPresetIds: ['1080x1080'],
   htmlTemplate: `
-    <div class="tile">
+    <div class="slide">
       <div class="tile-photo" style="{{photoStyle}}"></div>
       <div class="tile-overlay" style="{{overlayStyle}}"></div>
+      <div class="grid"></div>
+      <div class="glow glow--tl"></div>
+      <div class="glow glow--br"></div>
+      <div class="accent-stripe"></div>
+      <div class="topbar"></div>
 
-      <div class="tile-content">
-        <div class="tile-top">
-          <div class="tile-logo">{{showName}}</div>
-          <div class="tile-episode-badge">FOLGE #{{episodeNumber}}</div>
-        </div>
-
-        <div class="tile-spacer"></div>
-
-        <div class="tile-quote-area">
-          <div class="tile-quote-mark">&bdquo;</div>
-          <div class="tile-quote">{{quoteHtml}}</div>
-        </div>
-
-        <div class="tile-bottom">
-          <div class="tile-meta">
-            <div class="tile-guest">{{guestDisplay}}</div>
-            <div class="tile-episode-title">{{episodeTitle}}</div>
-            <div class="tile-tags">{{tagsHtml}}</div>
-          </div>
-          <div class="tile-handle">{{handle}}</div>
-        </div>
+      <div class="tag">
+        <div class="tag-dot"></div>
+        <span class="tag-text">{{tagText}}</span>
       </div>
 
-      <div class="tile-accent-line"></div>
+      <div class="badge badge--gold">{{badgeText}}</div>
+
+      <div class="tile-content">
+        <div class="tile-quote-mark">&bdquo;</div>
+        <div class="tile-quote">{{quoteHtml}}</div>
+      </div>
+
+      <div class="bottom">
+        <div class="tile-meta">
+          <div class="tile-name">{{personName}}</div>
+          <div class="tile-role">{{personRole}}</div>
+          <div class="tile-context">{{personContext}}</div>
+        </div>
+        <div class="brand">{{brand}}</div>
+      </div>
     </div>
   `,
   css: `
-    :root {
-      --lav: #c4a0d0;
-      --lav-l: #e8d5f0;
-      --lav-d: #9b6eb5;
-      --lav-dp: #6b3f8a;
-      --bg: #f5eefa;
-      --td: #2a1540;
-      --tm: #5a3d75;
-      --tl: #8b6aaa;
-      --font-heading: 'Fraunces', Georgia, serif;
-      --font-body: 'DM Sans', system-ui, sans-serif;
+    ${sharedBaseCss}
+
+    .slide {
+      background: var(--bg);
     }
 
-    *, *::before, *::after {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    .tile {
-      width: 1080px;
-      height: 1080px;
-      position: relative;
-      overflow: hidden;
-      background: #1a1020;
-      flex-shrink: 0;
-      font-family: var(--font-body);
+    .tile-photo,
+    .tile-overlay,
+    .tile-content {
+      position: absolute;
+      inset: 0;
     }
 
     .tile-photo {
-      position: absolute;
-      inset: 0;
+      z-index: 1;
       background-repeat: no-repeat;
       background-size: cover;
       background-position: center top;
-      z-index: 1;
+      filter: saturate(0.82) contrast(1.04) brightness(0.82);
     }
 
     .tile-overlay {
-      position: absolute;
-      inset: 0;
       z-index: 2;
       background:
         linear-gradient(
-          to bottom,
-          rgba(42, 21, 64, 0.0) 0%,
-          rgba(42, 21, 64, 0.05) 25%,
-          rgba(42, 21, 64, 0.45) 50%,
-          rgba(42, 21, 64, 0.82) 68%,
-          rgba(42, 21, 64, 0.94) 80%,
-          rgba(42, 21, 64, 0.98) 100%
+          180deg,
+          rgba(15, 23, 42, 0.18) 0%,
+          rgba(15, 23, 42, 0.32) 26%,
+          rgba(15, 23, 42, 0.6) 52%,
+          rgba(15, 23, 42, 0.82) 72%,
+          rgba(15, 23, 42, 0.96) 100%
         );
     }
 
     .tile-overlay::before {
       content: '';
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 180px;
-      background: linear-gradient(to bottom, rgba(107, 63, 138, 0.25) 0%, transparent 100%);
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(232,184,75,0.08) 0%, transparent 22%),
+        radial-gradient(circle at top right, rgba(232,184,75,0.08) 0%, transparent 42%);
     }
 
     .tile-content {
-      position: relative;
-      z-index: 3;
-      width: 100%;
-      height: 100%;
+      z-index: 5;
       display: flex;
       flex-direction: column;
-      padding: 56px 64px 52px;
-    }
-
-    .tile-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .tile-logo {
-      font-family: var(--font-heading);
-      font-style: italic;
-      font-weight: 400;
-      font-size: 26px;
-      color: rgba(255,255,255,0.92);
-      text-shadow: 0 2px 12px rgba(0,0,0,0.4);
-    }
-
-    .tile-episode-badge {
-      font-family: var(--font-body);
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: white;
-      background: rgba(107, 63, 138, 0.65);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      padding: 8px 20px;
-      border-radius: 999px;
-      border: 1px solid rgba(196, 160, 208, 0.3);
-    }
-
-    .tile-spacer {
-      flex: 1;
-    }
-
-    .tile-quote-area {
-      margin-bottom: 28px;
+      justify-content: center;
+      padding: 220px 96px 240px 96px;
     }
 
     .tile-quote-mark {
-      font-family: var(--font-heading);
-      font-size: 96px;
-      line-height: 0.5;
-      color: var(--lav);
-      opacity: 0.6;
-      margin-bottom: 12px;
-      text-shadow: 0 2px 20px rgba(107,63,138,0.4);
+      font-family: 'Instrument Serif', serif;
+      font-size: 118px;
+      line-height: 0.7;
+      color: rgba(232,184,75,0.22);
+      margin-bottom: 18px;
       user-select: none;
     }
 
     .tile-quote {
-      font-family: var(--font-heading);
-      font-size: 44px;
-      font-weight: 700;
-      line-height: 1.22;
-      color: #ffffff;
-      letter-spacing: -0.02em;
-      max-width: 900px;
-      text-shadow: 0 2px 16px rgba(0,0,0,0.35);
+      max-width: 820px;
+      font-family: 'Instrument Serif', serif;
+      font-size: 68px;
+      line-height: 1.06;
+      letter-spacing: -1.6px;
+      color: #fff;
+      text-wrap: balance;
+      text-shadow: 0 10px 30px rgba(15,23,42,0.42);
     }
 
     .tile-quote em {
-      color: var(--lav-l);
+      color: var(--gold);
       font-style: italic;
-      font-weight: 400;
-    }
-
-    .tile-bottom {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      gap: 20px;
     }
 
     .tile-meta {
       display: flex;
       flex-direction: column;
-      gap: 5px;
+      gap: 6px;
+      max-width: 620px;
     }
 
-    .tile-guest {
-      font-family: var(--font-body);
-      font-size: 20px;
+    .tile-name {
+      font-size: 24px;
       font-weight: 600;
-      color: #ffffff;
+      line-height: 1.2;
+      color: #fff;
     }
 
-    .tile-episode-title {
-      font-family: var(--font-body);
-      font-size: 16px;
+    .tile-role,
+    .tile-context {
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .tile-role {
       font-weight: 500;
-      color: rgba(232, 213, 240, 0.75);
+      color: var(--text);
     }
 
-    .tile-tags {
-      display: flex;
-      gap: 8px;
-      margin-top: 6px;
-      flex-wrap: wrap;
-    }
-
-    .tile-tag {
-      font-family: var(--font-body);
-      font-size: 12px;
-      font-weight: 600;
-      color: white;
-      background: rgba(196, 160, 208, 0.3);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      padding: 5px 14px;
-      border-radius: 20px;
-      border: 1px solid rgba(196, 160, 208, 0.2);
-    }
-
-    .tile-handle {
-      font-family: var(--font-body);
-      font-size: 16px;
-      font-weight: 500;
-      color: rgba(232, 213, 240, 0.65);
-      text-align: right;
-      white-space: nowrap;
-    }
-
-    .tile-accent-line {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 6px;
-      background: linear-gradient(90deg, var(--lav-dp), var(--lav), var(--lav-l));
-      z-index: 4;
+    .tile-context {
+      font-weight: 400;
+      color: var(--text-soft);
     }
   `,
   fields: [
     {
       id: 'photoSrc',
-      label: 'Gast-Foto',
+      label: 'Foto',
       type: 'image',
-      helpText: 'Am besten funktioniert ein Porträtfoto mit klarem Fokus auf der Person.',
+      helpText: 'Am besten funktioniert ein Porträt oder Executive-Foto mit klarer Hauptperson.',
     },
     {
       id: 'photoPositionXPreset',
@@ -299,50 +202,30 @@ export const podcastPhotoQuoteTileTemplate: GraphicTemplate = {
         { label: 'Stark', value: 'stark' },
       ],
     },
+    { id: 'tagText', label: 'Kicker', type: 'text' },
+    { id: 'badgeText', label: 'Badge', type: 'text' },
     { id: 'quote', label: 'Zitat', type: 'textarea', multiline: true },
-    { id: 'episodeNumber', label: 'Folgennr.', type: 'number' },
-    { id: 'guest', label: 'Gast', type: 'text' },
-    { id: 'episodeTitle', label: 'Folgentitel', type: 'text' },
-    { id: 'tags', label: 'Tags (kommagetrennt)', type: 'text' },
-    { id: 'handle', label: 'Handle', type: 'text' },
-    { id: 'showName', label: 'Showname / Logo', type: 'text' },
+    { id: 'personName', label: 'Name', type: 'text' },
+    { id: 'personRole', label: 'Rolle', type: 'text' },
+    { id: 'personContext', label: 'Kontext', type: 'text' },
+    { id: 'brand', label: 'Brand', type: 'text' },
   ],
   defaults: {
     photoSrc: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=1200&q=80',
     photoPositionXPreset: 'mitte',
     photoPositionYPreset: 'oben',
     overlayPreset: 'mittel',
-    quote: 'Essen ist nie nur Essen. Es ist immer auch *eine Erinnerung an Zuhause.*',
-    episodeNumber: '4',
-    guest: 'Fikri Anıl Altıntaş',
-    episodeTitle: 'Büchse der Lyoner – mit Anıl',
-    tags: 'Kindheit, Identität, Interview',
-    handle: '@yasminpolat',
-    showName: 'Link in Bio',
+    tagText: 'Executive insight · Business',
+    badgeText: 'Quote',
+    quote: 'Strategie wird dann relevant, wenn sie komplexe Entscheidungen *klar und handlungsfähig* macht.',
+    personName: 'Max Mustermann',
+    personRole: 'Managing Director · Health & Market Access',
+    personContext: 'Interview · Business Insight',
+    brand: 'G-BA Digest',
   },
   resolveFieldValues: (values) => {
-    const escapeHtml = (value: string) =>
-      value
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-
     const rawQuote = String(values.quote ?? '').trim();
-    const quoteHtml = escapeHtml(rawQuote)
-      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-      .replace(/\n/g, '<br>');
-
-    const tags = String(values.tags ?? '')
-      .split(',')
-      .map((tag) => tag.trim())
-      .filter(Boolean);
-
-    const tagsHtml = tags.map((tag) => `<span class="tile-tag">${escapeHtml(tag)}</span>`).join('');
-
-    const guest = String(values.guest ?? '').trim();
-    const guestDisplay = guest ? `— ${guest}` : '';
+    const quoteHtml = escapeTemplateHtml(rawQuote).replace(/\*([^*]+)\*/g, '<em>$1</em>');
 
     const posX =
       photoPositionXPresets[values.photoPositionXPreset ?? ''] ??
@@ -357,28 +240,29 @@ export const podcastPhotoQuoteTileTemplate: GraphicTemplate = {
 
     const overlayStyle = `background:
       linear-gradient(
-        to bottom,
-        rgba(42, 21, 64, 0.0) 0%,
-        rgba(42, 21, 64, ${0.05 * overlay}) 20%,
-        rgba(42, 21, 64, ${0.5 * overlay}) 48%,
-        rgba(42, 21, 64, ${0.85 * overlay}) 66%,
-        rgba(42, 21, 64, ${0.96 * overlay}) 80%,
-        rgba(42, 21, 64, ${0.99 * overlay}) 100%
+        180deg,
+        rgba(15, 23, 42, ${0.12 + 0.12 * overlay}) 0%,
+        rgba(15, 23, 42, ${0.2 + 0.22 * overlay}) 24%,
+        rgba(15, 23, 42, ${0.34 + 0.38 * overlay}) 50%,
+        rgba(15, 23, 42, ${0.55 + 0.34 * overlay}) 72%,
+        rgba(15, 23, 42, ${0.74 + 0.22 * overlay}) 100%
       );`;
 
     const photoSrc = String(values.photoSrc ?? '').trim();
-    const photoStyle = photoSrc
-      ? `background-image: url('${photoSrc}'); background-position: ${posX}% ${posY}%;`
+    const safePhotoSrc = photoSrc
+      .replace(/\\/g, '\\\\')
+      .replace(/'/g, "\\'")
+      .replace(/\r?\n/g, '');
+    const photoStyle = safePhotoSrc
+      ? `background-image: url('${safePhotoSrc}'); background-position: ${posX}% ${posY}%;`
       : `background-image: none; background-position: ${posX}% ${posY}%;`;
 
     return {
       ...values,
       quoteHtml,
-      tagsHtml,
-      guestDisplay,
       photoStyle,
       overlayStyle,
     };
   },
-  rawHtmlPlaceholders: ['quoteHtml', 'tagsHtml', 'photoStyle'],
+  rawHtmlPlaceholders: ['quoteHtml', 'photoStyle', 'overlayStyle'],
 };
