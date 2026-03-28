@@ -21,7 +21,7 @@ const overlayPresets: Record<string, number> = {
 };
 
 export const podcastPhotoQuoteTileTemplate: GraphicTemplate = {
-  id: 'podcast-photo-quote-tile',
+  id: 'business-photo-quote-tile',
   name: 'Business · Foto-Zitatekachel',
   description: 'Quadratische Business-Kachel mit Foto, Overlay und Executive Quote im Gold/Navy-System.',
   category: 'business',
