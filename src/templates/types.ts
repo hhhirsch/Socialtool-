@@ -8,4 +8,6 @@ export type {
   TemplateFieldGroup,
   TemplateFieldType,
   TemplateOption,
+  TemplateSlideRenderDefinition,
+  TemplateSlideRenderHelpers,
 } from '../types';

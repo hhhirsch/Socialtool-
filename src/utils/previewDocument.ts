@@ -83,10 +83,19 @@ export function buildExportMarkup(
 ): { markup: string; styles: string } {
   const safeHtml = sanitizeHtml(html);
   const graphicStyles = buildGraphicStyles(css, width, height);
+  const staticExportStyles = `
+    ${EXPORT_ROOT_SELECTOR},
+    ${EXPORT_ROOT_SELECTOR} *,
+    ${EXPORT_ROOT_SELECTOR} *::before,
+    ${EXPORT_ROOT_SELECTOR} *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  `;
 
   return {
     markup: `<div id="${EXPORT_ROOT_ID}" data-export-root="true">${safeHtml}</div>`,
-    styles: scopeGraphicStyles(graphicStyles, EXPORT_ROOT_SELECTOR),
+    styles: `${scopeGraphicStyles(graphicStyles, EXPORT_ROOT_SELECTOR)}\n${staticExportStyles}`,
   };
 }
 

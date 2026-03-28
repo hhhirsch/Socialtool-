@@ -15,6 +15,18 @@ export type TemplateCategory = 'business' | 'podcast';
 
 export type FieldValues = Record<string, string>;
 
+export interface TemplateSlideRenderDefinition {
+  id: string;
+  html: string;
+  css?: string;
+  label?: string;
+  filename?: string;
+}
+
+export interface TemplateSlideRenderHelpers {
+  render: (fieldValues: FieldValues) => string;
+}
+
 export interface TemplateField {
   id: string;
   label: string;
@@ -55,6 +67,10 @@ export interface GraphicTemplate {
   defaults: Record<string, string>;
   rawHtmlPlaceholders?: string[];
   resolveFieldValues?: (fieldValues: FieldValues) => FieldValues;
+  resolveSlides?: (
+    fieldValues: FieldValues,
+    helpers: TemplateSlideRenderHelpers
+  ) => TemplateSlideRenderDefinition[];
 }
 
 export type TabId = 'content' | 'preview' | 'templates' | 'advanced';

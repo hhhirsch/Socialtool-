@@ -17,6 +17,10 @@ interface Props {
   onScaleChange: (scale: number) => void;
   frameRef?: RefObject<HTMLIFrameElement | null>;
   onFrameLoad?: () => void;
+  slideCount?: number;
+  activeSlideIndex?: number;
+  onPreviousSlide?: () => void;
+  onNextSlide?: () => void;
 }
 
 function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
@@ -77,6 +81,10 @@ export function PreviewPanel({
   onScaleChange,
   frameRef,
   onFrameLoad,
+  slideCount = 1,
+  activeSlideIndex = 0,
+  onPreviousSlide,
+  onNextSlide,
 }: Props) {
   const frameAreaRef = useRef<HTMLDivElement>(null);
   const internalFrameRef = useRef<HTMLIFrameElement>(null);
@@ -144,6 +152,7 @@ export function PreviewPanel({
       `class="slide ${presetClass}`
     );
   }, [documentHtml, preset.height, preset.width]);
+  const hasSlideNavigation = slideCount > 1;
 
   return (
     <section className={styles.panel}>
@@ -166,6 +175,32 @@ export function PreviewPanel({
           <span className={styles.controlLabel}>Zoom</span>
           <ZoomControls value={zoomLevel} onChange={onZoomChange} />
         </div>
+        {hasSlideNavigation && (
+          <div className={styles.controlBlock}>
+            <span className={styles.controlLabel}>Story-Slides</span>
+            <div className={styles.slideControls}>
+              <button
+                type="button"
+                className={styles.slideButton}
+                onClick={onPreviousSlide}
+                disabled={activeSlideIndex <= 0}
+              >
+                ← Zurück
+              </button>
+              <span className={styles.slideBadge}>
+                {activeSlideIndex + 1} / {slideCount}
+              </span>
+              <button
+                type="button"
+                className={styles.slideButton}
+                onClick={onNextSlide}
+                disabled={activeSlideIndex >= slideCount - 1}
+              >
+                Weiter →
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div ref={frameAreaRef} className={`${styles.previewArea} ${backgroundClass}`}>
