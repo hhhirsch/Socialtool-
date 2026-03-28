@@ -1,13 +1,19 @@
-import type { FieldValues, GraphicTemplate, TemplateSlideRenderDefinition } from './types';
+import type { GraphicTemplate } from './types';
 
-type StoryMessageDirection = 'in' | 'out' | 'typing';
+type StoryMessage = {
+  kind: 'message' | 'typing';
+  direction?: 'in' | 'out';
+  text?: string;
+  time?: string;
+  emojiOnly?: boolean;
+};
 
-interface StoryMessage {
-  direction: StoryMessageDirection;
-  text: string;
-  time: string;
-  isEmojiOnly: boolean;
-}
+type StorySlide = {
+  kind: 'chat' | 'cta';
+  index: number;
+  total: number;
+  html: string;
+};
 
 function escapeHtml(value: string): string {
   return value
@@ -18,818 +24,828 @@ function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
-function isEmojiOnlyMessage(value: string): boolean {
-  const normalizedValue = value.replace(/\s+/g, '');
-  return normalizedValue.length > 0
-    && /^(?:\p{Extended_Pictographic}|\p{Emoji_Presentation}|\u200D|\uFE0F)+$/u.test(normalizedValue);
-}
-
-function extractMessageTime(line: string): { content: string; time: string } {
-  const timeMatch = line.match(/\|\s*(([01]?\d|2[0-3]):\d{2})\s*$/);
-  if (!timeMatch) {
-    return { content: line.trim(), time: '' };
+function parseStoryLine(line: string): StoryMessage {
+  if (line.toUpperCase() === 'TYPING') {
+    return { kind: 'typing' };
   }
+
+  let direction: 'in' | 'out' = 'in';
+  let text = line;
+
+  if (/^OUT:/i.test(text)) {
+    direction = 'out';
+    text = text.replace(/^OUT:\s*/i, '');
+  } else if (/^IN:/i.test(text)) {
+    direction = 'in';
+    text = text.replace(/^IN:\s*/i, '');
+  }
+
+  let time = '';
+  const parts = text.split('|');
+  if (parts.length > 1) {
+    time = parts.pop()?.trim() ?? '';
+    text = parts.join('|').trim();
+  }
+
+  const emojiOnly =
+    /^[\p{Emoji}\u200d\ufe0f\s]{1,12}$/u.test(text) && text.trim().length <= 6;
 
   return {
-    content: line.slice(0, timeMatch.index).trim(),
-    time: timeMatch[1],
-  };
-}
-
-function parseMessageLine(line: string): StoryMessage | null {
-  const trimmedLine = line.trim();
-  if (!trimmedLine) {
-    return null;
-  }
-
-  const { content, time } = extractMessageTime(trimmedLine);
-
-  if (/^TYPING$/i.test(content)) {
-    return {
-      direction: 'typing',
-      text: '',
-      time,
-      isEmojiOnly: false,
-    };
-  }
-
-  const match = content.match(/^(IN|OUT):\s*(.+)$/i);
-  if (!match) {
-    return null;
-  }
-
-  const text = match[2].trim();
-  if (!text) {
-    return null;
-  }
-
-  return {
-    direction: match[1].toUpperCase() === 'OUT' ? 'out' : 'in',
+    kind: 'message',
+    direction,
     text,
     time,
-    isEmojiOnly: isEmojiOnlyMessage(text),
+    emojiOnly,
   };
 }
 
-function parseSlides(messages: string): StoryMessage[][] {
-  return messages
-    .split(/\n\s*---\s*\n/g)
-    .map((block) =>
-      block
-        .split('\n')
-        .map(parseMessageLine)
-        .filter((message): message is StoryMessage => message !== null)
-    )
-    .filter((block) => block.length > 0);
-}
+function buildProgressBars(total: number, activeIndex: number, light = false): string {
+  return Array.from({ length: total }, (_, index) => {
+    const classes = [
+      'progress-bar',
+      index < activeIndex ? 'done' : '',
+      index === activeIndex ? 'active' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
 
-function renderProgressBars(totalSlides: number, activeIndex: number): string {
-  return Array.from({ length: totalSlides }, (_, index) => {
-    const stateClass =
-      index < activeIndex ? 'is-complete' : index === activeIndex ? 'is-current' : 'is-pending';
-
-    return `<span class="story-progress-bar ${stateClass}"><span class="story-progress-fill"></span></span>`;
+    return `
+      <div class="${classes}">
+        <div class="progress-fill${light ? ' progress-fill-light' : ''}"></div>
+      </div>
+    `;
   }).join('');
 }
 
-function renderMessage(message: StoryMessage): string {
-  if (message.direction === 'typing') {
-    return `
-      <div class="story-message is-in is-typing">
-        <span class="typing-dot"></span>
-        <span class="typing-dot"></span>
-        <span class="typing-dot"></span>
-        ${message.time ? `<span class="story-message-time">${escapeHtml(message.time)}</span>` : ''}
-      </div>
-    `;
-  }
+function buildMessagesHtml(messages: StoryMessage[], newCount: number): string {
+  const total = messages.length;
 
-  const bubbleClass = [
-    'story-message',
-    message.direction === 'out' ? 'is-out' : 'is-in',
-    message.isEmojiOnly ? 'is-emoji' : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
+  return messages
+    .map((message, index) => {
+      const isNew = index >= total - newCount;
+      const delay = isNew ? (index - (total - newCount)) * 0.12 : 0;
+      const style = isNew
+        ? `animation-delay:${delay}s;`
+        : `opacity:1;transform:none;`;
 
-  return `
-    <div class="${bubbleClass}">
-      <span class="story-message-text">${escapeHtml(message.text)}</span>
-      ${message.time ? `<span class="story-message-time">${escapeHtml(message.time)}</span>` : ''}
-    </div>
-  `;
+      if (message.kind === 'typing') {
+        return `
+          <div class="s-msg-typing" style="${style}">
+            <div class="s-typing-dot"></div>
+            <div class="s-typing-dot"></div>
+            <div class="s-typing-dot"></div>
+          </div>
+        `;
+      }
+
+      const dirClass = message.direction === 'out' ? 's-msg-out' : 's-msg-in';
+      const emojiClass = message.emojiOnly ? ' s-msg-emoji' : '';
+
+      return `
+        <div class="s-msg ${dirClass}${emojiClass}" style="${style}">
+          ${escapeHtml(message.text ?? '')}
+          ${message.time ? `<span class="s-msg-time">${escapeHtml(message.time)}</span>` : ''}
+        </div>
+      `;
+    })
+    .join('');
 }
 
-function renderChatBody(values: FieldValues, messages: StoryMessage[]): string {
-  return `
-    <div class="chat-stage">
-      <div class="episode-chip">Folge #${escapeHtml(values.episodeNumber ?? '')}</div>
-      <div class="chat-messages">
-        ${messages.map(renderMessage).join('')}
-      </div>
-      <div class="chat-input-shell">
-        <div class="chat-input-field">Nachricht schreiben…</div>
-        <div class="chat-send-button" aria-hidden="true">
-          <span class="chat-send-icon"></span>
-        </div>
-      </div>
-      <div class="story-episode-card">
-        <div class="story-episode-kicker">${escapeHtml(values.showName ?? '')}</div>
-        <div class="story-episode-title">${escapeHtml(values.episodeTitle ?? '')}</div>
-      </div>
-    </div>
-  `;
-}
+function buildAvatar(chatName: string): string {
+  const initials = chatName
+    .split(' ')
+    .map((part) => part.trim()[0] ?? '')
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
 
-function renderCtaBody(values: FieldValues): string {
-  return `
-    <div class="cta-stage">
-      <div class="cta-badge">Neue Podcast-Folge</div>
-      <div class="cta-card">
-        <div class="cta-play-button" aria-hidden="true">
-          <span class="cta-play-triangle"></span>
-        </div>
-        <div class="cta-copy">
-          <h2>${escapeHtml(values.ctaHeading ?? '')}</h2>
-          <p class="cta-episode-info">
-            Folge #${escapeHtml(values.episodeNumber ?? '')} · ${escapeHtml(values.episodeTitle ?? '')}
-          </p>
-          <p class="cta-show-name">${escapeHtml(values.showName ?? '')}</p>
-        </div>
-      </div>
-      <div class="cta-button">${escapeHtml(values.ctaButtonLabel ?? '')}</div>
-      <div class="cta-handle">${escapeHtml(values.ctaHandleText ?? '')} ${escapeHtml(values.handle ?? '')}</div>
-    </div>
-  `;
-}
-
-function buildSlideDefinition(
-  values: FieldValues,
-  totalSlides: number,
-  activeIndex: number,
-  storyBodyHtml: string,
-  slideVariant: string,
-  filename: string,
-  helpers: { render: (fieldValues: FieldValues) => string }
-): TemplateSlideRenderDefinition {
-  return {
-    id: filename,
-    filename,
-    label: `${activeIndex + 1} / ${totalSlides}`,
-    html: helpers.render({
-      ...values,
-      slideVariant,
-      progressBarsHtml: renderProgressBars(totalSlides, activeIndex),
-      storyBodyHtml,
-    }),
-  };
+  return initials || 'FC';
 }
 
 export const podcastStoryChatTemplate: GraphicTemplate = {
   id: 'podcast-story-chat',
   name: 'Podcast · Story Chat',
-  description:
-    'Mehrere Story-Slides aus einem Chatverlauf. Slides werden per "---" getrennt und kumulativ aufgebaut.',
+  description: '9:16 Story-Chat-Slides mit kumulativem Nachrichtenverlauf und CTA-Slide.',
   category: 'podcast',
   supportedPresetIds: ['1080x1920'],
-  htmlTemplate: `
-    <div class="story-slide {{slideVariant}}">
-      <div class="story-shell">
-        <div class="story-glow story-glow-top"></div>
-        <div class="story-glow story-glow-bottom"></div>
-
-        <div class="story-statusbar">
-          <span>9:41</span>
-          <div class="story-status-icons" aria-hidden="true">
-            <span class="status-signal"></span>
-            <span class="status-wifi"></span>
-            <span class="status-battery"></span>
-          </div>
-        </div>
-
-        <div class="dynamic-island"></div>
-
-        <div class="story-progress-track">
-          {{progressBarsHtml}}
-        </div>
-
-        <div class="chat-header">
-          <div class="chat-header-avatar">{{chatName}}</div>
-          <div class="chat-header-copy">
-            <div class="chat-header-name">{{chatName}}</div>
-            <div class="chat-header-status">{{chatStatus}}</div>
-          </div>
-          <div class="chat-header-meta">⋯</div>
-        </div>
-
-        <div class="story-body">
-          {{storyBodyHtml}}
-        </div>
-
-        <div class="story-footer">
-          <div class="story-footer-show">{{showName}}</div>
-          <div class="story-footer-handle">{{handle}}</div>
-        </div>
-      </div>
-    </div>
-  `,
   css: `
     :root {
-      --story-bg: #110c1c;
-      --story-bg-soft: #231537;
-      --story-surface: rgba(20, 14, 31, 0.72);
-      --story-surface-strong: rgba(16, 10, 25, 0.88);
-      --story-border: rgba(255, 255, 255, 0.08);
-      --story-text: #ffffff;
-      --story-text-soft: rgba(255, 255, 255, 0.72);
-      --story-lavender: #d1b1ff;
-      --story-lavender-strong: #a85dff;
-      --story-lavender-soft: rgba(209, 177, 255, 0.22);
-      --story-green: #53d3a5;
-      --story-shadow: 0 28px 80px rgba(0, 0, 0, 0.34);
-      --font-body: 'DM Sans', system-ui, sans-serif;
+      --lav: #c4a0d0;
+      --lav-l: #e8d5f0;
+      --lav-d: #9b6eb5;
+      --lav-dp: #6b3f8a;
+      --bg: #f5eefa;
+      --bg-chat: #0f0820;
+      --bg-chat-2: #1d1035;
+      --td: #ffffff;
+      --tm: #d8cbe7;
+      --tl: #b89ccf;
+      --green: #47d3a1;
       --font-heading: 'Fraunces', Georgia, serif;
+      --font-body: 'DM Sans', system-ui, sans-serif;
     }
 
     *, *::before, *::after {
+      margin: 0;
+      padding: 0;
       box-sizing: border-box;
     }
 
-    .story-slide {
-      position: relative;
+    .story {
       width: 1080px;
       height: 1920px;
+      position: relative;
       overflow: hidden;
+      flex-shrink: 0;
       background:
-        radial-gradient(circle at top right, rgba(168, 93, 255, 0.42), transparent 34%),
-        radial-gradient(circle at bottom left, rgba(83, 211, 165, 0.22), transparent 28%),
-        linear-gradient(180deg, #1c1230 0%, #120d1f 48%, #0c0a15 100%);
-      color: var(--story-text);
+        radial-gradient(circle at 85% 12%, rgba(140, 87, 197, 0.42) 0%, transparent 18%),
+        radial-gradient(circle at 8% 82%, rgba(71, 211, 161, 0.14) 0%, transparent 16%),
+        linear-gradient(180deg, #2a163d 0%, #12091f 28%, #090510 100%);
       font-family: var(--font-body);
+      color: var(--td);
     }
 
-    .story-shell {
+    .story::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 14% 88%, rgba(71,211,161,0.08) 0%, transparent 24%),
+        radial-gradient(ellipse at 84% 12%, rgba(196,160,208,0.12) 0%, transparent 24%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .story-inner {
       position: relative;
+      z-index: 1;
       width: 100%;
       height: 100%;
-      padding: 54px 42px 40px;
       display: flex;
       flex-direction: column;
-      gap: 22px;
     }
 
-    .story-glow {
-      position: absolute;
-      border-radius: 999px;
-      pointer-events: none;
-      filter: blur(16px);
-      opacity: 0.6;
-    }
-
-    .story-glow-top {
-      top: 110px;
-      right: 40px;
-      width: 300px;
-      height: 300px;
-      background: rgba(168, 93, 255, 0.28);
-    }
-
-    .story-glow-bottom {
-      left: 10px;
-      bottom: 180px;
-      width: 340px;
-      height: 340px;
-      background: rgba(83, 211, 165, 0.16);
-    }
-
-    .story-statusbar {
+    .story-status-bar {
+      padding: 52px 52px 0;
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      padding: 0 8px;
-      font-size: 24px;
+      align-items: center;
+      font-size: 17px;
       font-weight: 700;
-      letter-spacing: 0.01em;
-      position: relative;
-      z-index: 2;
+      color: #ffffff;
+      flex-shrink: 0;
     }
 
     .story-status-icons {
       display: flex;
-      align-items: center;
       gap: 10px;
+      align-items: center;
+      color: #ffffff;
     }
 
-    .status-signal,
-    .status-wifi,
-    .status-battery {
-      display: inline-flex;
+    .status-pill {
+      width: 24px;
+      height: 12px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.9);
-    }
-
-    .status-signal {
-      width: 22px;
-      height: 12px;
-    }
-
-    .status-wifi {
-      width: 18px;
-      height: 12px;
-      opacity: 0.8;
-    }
-
-    .status-battery {
-      width: 30px;
-      height: 14px;
+      background: rgba(255,255,255,0.92);
     }
 
     .dynamic-island {
-      width: 220px;
-      height: 52px;
+      position: absolute;
+      top: 72px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 230px;
+      height: 54px;
+      background: #000000;
       border-radius: 999px;
-      background: #050507;
-      align-self: center;
-      margin-top: -10px;
-      box-shadow: 0 14px 24px rgba(0, 0, 0, 0.32);
-      position: relative;
-      z-index: 2;
+      z-index: 5;
     }
 
-    .story-progress-track {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    .story-progress {
+      display: flex;
       gap: 10px;
-      position: relative;
-      z-index: 2;
-      margin-top: -4px;
+      padding: 62px 44px 0;
+      flex-shrink: 0;
     }
 
-    .story-progress-bar {
-      height: 8px;
+    .progress-bar {
+      flex: 1;
+      height: 6px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.16);
+      background: rgba(255,255,255,0.18);
       overflow: hidden;
     }
 
-    .story-progress-fill {
-      display: block;
-      height: 100%;
-      width: 0;
-      border-radius: inherit;
-      background: linear-gradient(90deg, #ffffff 0%, rgba(255, 255, 255, 0.88) 100%);
-    }
-
-    .story-progress-bar.is-complete .story-progress-fill,
-    .story-progress-bar.is-current .story-progress-fill {
+    .progress-fill {
       width: 100%;
+      height: 100%;
+      background: #ffffff;
+      border-radius: 999px;
+      display: none;
     }
 
-    .story-progress-bar.is-pending .story-progress-fill {
-      width: 0;
+    .progress-bar.done .progress-fill,
+    .progress-bar.active .progress-fill {
+      display: block;
     }
 
-    .chat-header {
+    .story-chat-header {
+      margin: 24px 42px 0;
+      padding: 26px 30px;
       display: flex;
       align-items: center;
       gap: 18px;
-      padding: 26px 28px;
-      border-radius: 34px;
-      background: rgba(255, 255, 255, 0.08);
-      backdrop-filter: blur(22px);
-      -webkit-backdrop-filter: blur(22px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: var(--story-shadow);
-      position: relative;
-      z-index: 2;
+      border-radius: 40px;
+      background: rgba(255,255,255,0.10);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
     }
 
-    .chat-header-avatar {
-      width: 74px;
-      height: 74px;
+    .story-avatar {
+      width: 62px;
+      height: 62px;
       border-radius: 50%;
-      background: linear-gradient(135deg, var(--story-lavender) 0%, var(--story-lavender-strong) 100%);
-      color: #1b1129;
+      background: linear-gradient(135deg, #d6a4ff, #8d54d9);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 21px;
-      font-weight: 700;
-      text-transform: uppercase;
-      flex-shrink: 0;
-      overflow: hidden;
-      padding: 0 12px;
+      color: #111111;
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.05;
       text-align: center;
-      line-height: 1.1;
+      flex-shrink: 0;
     }
 
-    .chat-header-copy {
+    .story-header-info {
       display: flex;
       flex-direction: column;
       gap: 4px;
-      min-width: 0;
-      flex: 1;
     }
 
-    .chat-header-name {
-      font-size: 30px;
+    .story-chat-name {
+      font-size: 24px;
       font-weight: 700;
-      line-height: 1.15;
+      color: #ffffff;
     }
 
-    .chat-header-status {
-      font-size: 20px;
-      color: var(--story-text-soft);
+    .story-chat-status {
+      font-size: 14px;
+      color: rgba(255,255,255,0.76);
+      font-weight: 500;
     }
 
-    .chat-header-meta {
-      font-size: 44px;
+    .story-header-right {
+      margin-left: auto;
+      font-size: 34px;
+      color: rgba(255,255,255,0.72);
       line-height: 1;
-      color: rgba(255, 255, 255, 0.7);
     }
 
-    .story-body {
+    .story-panel {
       flex: 1;
-      min-height: 0;
-      position: relative;
-      z-index: 1;
-    }
-
-    .chat-stage,
-    .cta-stage {
-      width: 100%;
-      height: 100%;
-      border-radius: 40px;
-      background: var(--story-surface);
-      border: 1px solid var(--story-border);
-      box-shadow: var(--story-shadow);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      overflow: hidden;
-    }
-
-    .chat-stage {
+      margin: 24px 42px 0;
+      border-radius: 42px;
+      background: linear-gradient(180deg, rgba(7,2,18,0.88) 0%, rgba(12,4,24,0.96) 100%);
+      border: 1px solid rgba(255,255,255,0.04);
       display: flex;
       flex-direction: column;
-      padding: 32px 28px 26px;
-      gap: 22px;
+      overflow: hidden;
+      position: relative;
     }
 
-    .episode-chip {
+    .story-badge {
       align-self: flex-start;
-      padding: 12px 18px;
+      margin: 32px 32px 0;
+      padding: 12px 20px;
       border-radius: 999px;
-      background: var(--story-lavender-soft);
-      color: var(--story-lavender);
-      font-size: 18px;
+      background: rgba(196,160,208,0.24);
+      color: #d8cbe7;
+      font-size: 16px;
       font-weight: 700;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.02em;
       text-transform: uppercase;
     }
 
-    .chat-messages {
+    .story-messages {
       flex: 1;
-      min-height: 0;
+      padding: 22px 30px 16px;
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
       gap: 16px;
       overflow: hidden;
-      padding-bottom: 6px;
     }
 
-    .story-message {
+    .s-msg {
       max-width: 78%;
-      display: inline-flex;
-      flex-direction: column;
-      gap: 6px;
-      padding: 18px 22px;
-      border-radius: 28px;
-      font-size: 30px;
-      line-height: 1.35;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
-      word-break: break-word;
+      padding: 20px 24px 14px;
+      font-size: 24px;
+      line-height: 1.42;
+      position: relative;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: msgAppear 0.35s ease-out forwards;
     }
 
-    .story-message.is-in {
+    @keyframes msgAppear {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .s-msg-in {
       align-self: flex-start;
-      background: rgba(255, 255, 255, 0.96);
-      color: #20142e;
-      border-bottom-left-radius: 12px;
+      background: #f3f1f4;
+      color: #23192f;
+      border-radius: 26px 26px 26px 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
 
-    .story-message.is-out {
+    .s-msg-out {
       align-self: flex-end;
-      background: linear-gradient(135deg, #9f54ff 0%, #7d3feb 100%);
+      background: linear-gradient(135deg, #a952ff 0%, #7f45f0 100%);
       color: #ffffff;
-      border-bottom-right-radius: 12px;
+      border-radius: 26px 26px 10px 26px;
+      box-shadow: 0 6px 20px rgba(127,69,240,0.24);
     }
 
-    .story-message.is-emoji {
-      background: transparent;
-      box-shadow: none;
-      padding: 0;
-      font-size: 68px;
-      line-height: 1;
-    }
-
-    .story-message.is-typing {
-      flex-direction: row;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .typing-dot {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: rgba(32, 20, 46, 0.36);
-      animation: storyTyping 1.2s infinite ease-in-out;
-    }
-
-    .typing-dot:nth-child(2) {
-      animation-delay: 0.18s;
-    }
-
-    .typing-dot:nth-child(3) {
-      animation-delay: 0.36s;
-    }
-
-    .story-message-text {
+    .s-msg-time {
+      font-size: 14px;
+      opacity: 0.58;
+      margin-top: 8px;
       display: block;
-    }
-
-    .story-message-time {
-      display: block;
-      font-size: 16px;
       font-weight: 600;
-      opacity: 0.56;
-      align-self: flex-end;
     }
 
-    .story-message.is-in .story-message-time {
+    .s-msg-out .s-msg-time {
+      text-align: right;
+    }
+
+    .s-msg-emoji {
+      font-size: 54px;
+      background: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      border-radius: 0 !important;
+    }
+
+    .s-msg-typing {
       align-self: flex-start;
+      background: #f3f1f4;
+      border-radius: 26px 26px 26px 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      padding: 20px 24px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      opacity: 0;
+      animation: msgAppear 0.35s ease-out forwards;
+      max-width: 160px;
     }
 
-    .chat-input-shell {
+    .s-typing-dot {
+      width: 12px;
+      height: 12px;
+      background: rgba(42,21,64,0.28);
+      border-radius: 50%;
+    }
+
+    .story-input-wrap {
+      padding: 0 30px 24px;
+    }
+
+    .story-input-bar {
       display: flex;
       align-items: center;
       gap: 14px;
-      padding-top: 8px;
+      margin-bottom: 22px;
     }
 
-    .chat-input-field {
+    .story-input-field {
       flex: 1;
-      min-height: 64px;
+      height: 68px;
       border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      background: rgba(8, 5, 14, 0.44);
-      color: rgba(255, 255, 255, 0.42);
+      border: 1.5px solid rgba(255,255,255,0.10);
+      background: rgba(4,2,12,0.72);
+      padding: 0 28px;
+      font-size: 18px;
+      color: rgba(255,255,255,0.38);
       display: flex;
       align-items: center;
-      padding: 0 24px;
-      font-size: 24px;
     }
 
-    .chat-send-button {
-      width: 64px;
-      height: 64px;
+    .story-send-btn {
+      width: 68px;
+      height: 68px;
       border-radius: 50%;
-      background: linear-gradient(135deg, var(--story-green) 0%, #3db989 100%);
+      background: #47d3a1;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      box-shadow: 0 10px 24px rgba(83, 211, 165, 0.24);
     }
 
-    .chat-send-icon {
-      width: 0;
-      height: 0;
-      border-top: 12px solid transparent;
-      border-bottom: 12px solid transparent;
-      border-left: 20px solid #082215;
-      margin-left: 4px;
+    .story-send-btn svg {
+      width: 24px;
+      height: 24px;
+      fill: #08120f;
+      transform: translateX(2px);
     }
 
-    .story-episode-card {
-      padding: 24px;
-      border-radius: 30px;
-      background: var(--story-surface-strong);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      display: grid;
-      gap: 10px;
+    .story-footer-card {
+      border-radius: 28px;
+      background: rgba(4,2,12,0.72);
+      border: 1px solid rgba(255,255,255,0.06);
+      padding: 22px 26px 24px;
     }
 
-    .story-episode-kicker {
-      color: var(--story-lavender);
-      font-size: 18px;
+    .story-footer-kicker {
+      font-size: 14px;
       font-weight: 700;
       letter-spacing: 0.08em;
+      color: #d8cbe7;
       text-transform: uppercase;
+      margin-bottom: 10px;
     }
 
-    .story-episode-title {
-      font-size: 34px;
-      line-height: 1.18;
+    .story-footer-title {
+      font-size: 28px;
+      line-height: 1.22;
       font-weight: 700;
+      color: #ffffff;
     }
 
-    .cta-stage {
+    .story-brand-row {
+      padding: 22px 42px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-shrink: 0;
+    }
+
+    .story-brand {
+      font-family: var(--font-heading);
+      font-style: italic;
+      font-weight: 400;
+      font-size: 28px;
+      color: #d5b2ff;
+    }
+
+    .story-handle {
+      font-size: 18px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.82);
+    }
+
+    .cta-slide {
+      width: 100%;
+      height: 100%;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      padding: 52px;
-      gap: 28px;
+      padding: 0;
+      position: relative;
+      background:
+        radial-gradient(circle at 85% 12%, rgba(140, 87, 197, 0.42) 0%, transparent 18%),
+        radial-gradient(circle at 8% 82%, rgba(71, 211, 161, 0.14) 0%, transparent 16%),
+        linear-gradient(180deg, #2a163d 0%, #12091f 28%, #090510 100%);
+    }
+
+    .cta-inner {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 0 42px 36px;
+    }
+
+    .cta-section {
+      flex: 1;
+      margin: 24px 0 0;
+      border-radius: 42px;
+      background: linear-gradient(180deg, rgba(7,2,18,0.88) 0%, rgba(12,4,24,0.96) 100%);
+      border: 1px solid rgba(255,255,255,0.04);
+      padding: 0 36px 40px;
+      display: flex;
+      flex-direction: column;
     }
 
     .cta-badge {
       align-self: flex-start;
-      padding: 14px 20px;
+      margin-top: 44px;
+      padding: 12px 20px;
       border-radius: 999px;
-      background: rgba(83, 211, 165, 0.14);
-      color: var(--story-green);
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
+      background: rgba(71,211,161,0.14);
+      color: #47d3a1;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
       text-transform: uppercase;
     }
 
     .cta-card {
-      display: grid;
-      gap: 26px;
-      padding: 34px;
+      margin-top: 30px;
       border-radius: 34px;
-      background: rgba(7, 5, 12, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(4,2,12,0.72);
+      border: 1px solid rgba(255,255,255,0.06);
+      padding: 36px 38px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
     }
 
-    .cta-play-button {
-      width: 120px;
-      height: 120px;
+    .cta-card-top {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+    }
+
+    .cta-play-circle {
+      width: 124px;
+      height: 124px;
       border-radius: 50%;
-      background: linear-gradient(135deg, var(--story-lavender) 0%, var(--story-lavender-strong) 100%);
+      background: linear-gradient(135deg, #d6a4ff, #8d54d9);
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 18px 38px rgba(168, 93, 255, 0.28);
+      flex-shrink: 0;
     }
 
-    .cta-play-triangle {
-      width: 0;
-      height: 0;
-      border-top: 22px solid transparent;
-      border-bottom: 22px solid transparent;
-      border-left: 34px solid #180f27;
-      margin-left: 8px;
+    .cta-play-circle svg {
+      width: 42px;
+      height: 42px;
+      fill: #1a1020;
+      transform: translateX(2px);
     }
 
-    .cta-copy {
-      display: grid;
-      gap: 14px;
+    .cta-card-copy {
+      flex: 1;
     }
 
-    .cta-copy h2 {
-      margin: 0;
+    .cta-heading {
       font-family: var(--font-heading);
-      font-size: 68px;
-      line-height: 0.98;
+      font-size: 74px;
+      font-weight: 700;
+      line-height: 1.06;
       letter-spacing: -0.03em;
+      color: #ffffff;
+      margin-bottom: 14px;
     }
 
-    .cta-episode-info,
-    .cta-show-name,
-    .cta-handle {
-      margin: 0;
-      font-size: 26px;
-      line-height: 1.35;
-      color: var(--story-text-soft);
+    .cta-episode {
+      font-size: 24px;
+      color: rgba(255,255,255,0.72);
+      line-height: 1.45;
+      margin-bottom: 12px;
+    }
+
+    .cta-sub {
+      font-size: 22px;
+      color: rgba(255,255,255,0.82);
     }
 
     .cta-button {
+      margin-top: 34px;
       width: 100%;
-      min-height: 88px;
+      min-height: 92px;
+      border-radius: 999px;
+      background: #47d3a1;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 999px;
-      background: linear-gradient(135deg, var(--story-green) 0%, #30b97b 100%);
-      color: #082215;
       font-size: 30px;
       font-weight: 800;
-      letter-spacing: 0.01em;
-      text-align: center;
-      box-shadow: 0 18px 42px rgba(48, 185, 123, 0.24);
+      color: #08120f;
     }
 
     .cta-handle {
       text-align: center;
-    }
-
-    .story-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      color: var(--story-text-soft);
       font-size: 22px;
-      position: relative;
-      z-index: 2;
+      color: rgba(255,255,255,0.76);
+      margin-top: 40px;
     }
 
-    .story-footer-show {
-      font-family: var(--font-heading);
-      font-style: italic;
-      font-size: 30px;
-      color: var(--story-lavender);
-    }
-
-    .story-footer-handle {
-      font-weight: 700;
-    }
-
-    @keyframes storyTyping {
-      0%, 60%, 100% {
-        transform: translateY(0);
-        opacity: 0.45;
-      }
-
-      30% {
-        transform: translateY(-5px);
-        opacity: 1;
-      }
+    .story-accent-line {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, #2f8d72, #8d54d9, #d6a4ff);
+      z-index: 20;
     }
   `,
   fields: [
     {
       id: 'messages',
-      label: 'Chat-Nachrichten',
+      label: 'Chat-Nachrichten (--- = neue Slide)',
       type: 'textarea',
       multiline: true,
-      helpText: 'Jede Zeile mit IN:, OUT: oder TYPING. "---" trennt Story-Slides. Zeit optional mit "| 14:22".',
+      helpText:
+        'IN: weiß links · OUT: lila rechts · TYPING = Animation · --- = nächste Slide · Zeit mit | 14:22 anhängen',
     },
     { id: 'chatName', label: 'Chat-Name', type: 'text' },
-    { id: 'chatStatus', label: 'Chat-Status', type: 'text' },
-    { id: 'episodeNumber', label: 'Folgennummer', type: 'text' },
+    { id: 'chatStatus', label: 'Status', type: 'text' },
+    { id: 'episodeNumber', label: 'Folgennummer', type: 'number' },
     { id: 'episodeTitle', label: 'Folgentitel', type: 'text' },
+    { id: 'showName', label: 'Showname / Logo', type: 'text' },
     { id: 'handle', label: 'Handle', type: 'text' },
-    { id: 'showName', label: 'Showname', type: 'text' },
-    { id: 'ctaHeading', label: 'CTA-Headline', type: 'text' },
+    { id: 'ctaHeading', label: 'CTA-Titel', type: 'text' },
     { id: 'ctaButtonLabel', label: 'CTA-Button', type: 'text' },
-    { id: 'ctaHandleText', label: 'CTA-Handle-Text', type: 'text' },
+    { id: 'ctaHandleText', label: 'CTA-Unterzeile', type: 'text' },
+    { id: 'inputPlaceholder', label: 'Input-Text', type: 'text' },
   ],
   defaults: {
     messages: `IN: Neue Folge schon gehört? | 14:22
-OUT: Noch nicht — worum geht's diesmal? | 14:23
+OUT: Noch nicht – worum geht's diesmal? | 14:23
 ---
 IN: Um Familienrituale, Identität und die Sache mit Lyoner-Wurst. | 14:24
 OUT: Klingt wild 😄 | 14:24
 ---
 OUT: Schick mir den Link! | 14:25
-TYPING | 14:25`,
+TYPING`,
     chatName: 'Link in Bio',
     chatStatus: 'Podcast-Chat · online',
     episodeNumber: '4',
     episodeTitle: 'Büchse der Lyoner – mit Anıl',
-    handle: '@yasminpolat',
     showName: 'Link in Bio',
+    handle: '@yasminpolat',
     ctaHeading: 'Jetzt neue Folge hören',
     ctaButtonLabel: 'Play drücken',
-    ctaHandleText: 'Mehr Updates bei',
-    slideVariant: 'is-chat',
-    progressBarsHtml: '',
-    storyBodyHtml: '',
+    ctaHandleText: 'Mehr Updates bei @yasminpolat',
+    inputPlaceholder: 'Nachricht schreiben...',
   },
-  resolveSlides: (values, helpers) => {
-    const parsedSlides = parseSlides(String(values.messages ?? ''));
-    const fallbackSlides = parsedSlides.length > 0 ? parsedSlides : parseSlides(String(podcastStoryChatTemplate.defaults.messages));
-    const totalSlides = fallbackSlides.length + 1;
 
-    const slides = fallbackSlides.map((_, index) =>
-      buildSlideDefinition(
-        values,
-        totalSlides,
+  resolveSlides: (values: Record<string, string>): StorySlide[] => {
+    const raw = String(values.messages ?? '');
+    const blocks = raw
+      .split('---')
+      .map((block) => block.trim())
+      .filter(Boolean);
+
+    const parsedSlides = blocks.map((block) =>
+      block
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map(parseStoryLine)
+    );
+
+    const totalSlides = parsedSlides.length + 1;
+    const avatar = buildAvatar(String(values.chatName ?? 'FC'));
+    const episodeNumber = escapeHtml(String(values.episodeNumber ?? ''));
+    const episodeTitle = escapeHtml(String(values.episodeTitle ?? ''));
+    const chatName = escapeHtml(String(values.chatName ?? ''));
+    const chatStatus = escapeHtml(String(values.chatStatus ?? ''));
+    const showName = escapeHtml(String(values.showName ?? ''));
+    const handle = escapeHtml(String(values.handle ?? ''));
+    const ctaHeading = escapeHtml(String(values.ctaHeading ?? ''));
+    const ctaButtonLabel = escapeHtml(String(values.ctaButtonLabel ?? ''));
+    const ctaHandleText = escapeHtml(String(values.ctaHandleText ?? ''));
+    const inputPlaceholder = escapeHtml(String(values.inputPlaceholder ?? ''));
+
+    const slides: StorySlide[] = [];
+    let cumulative: StoryMessage[] = [];
+
+    parsedSlides.forEach((slideMessages, index) => {
+      cumulative = cumulative.concat(slideMessages);
+
+      const progressHtml = buildProgressBars(totalSlides, index);
+      const messagesHtml = buildMessagesHtml(cumulative, slideMessages.length);
+
+      slides.push({
+        kind: 'chat',
         index,
-        renderChatBody(values, fallbackSlides.slice(0, index + 1).flat()),
-        'is-chat',
-        `slide-${String(index + 1).padStart(2, '0')}`,
-        helpers
-      )
-    );
+        total: totalSlides,
+        html: `
+          <div class="story">
+            <div class="dynamic-island"></div>
 
-    slides.push(
-      buildSlideDefinition(
-        values,
-        totalSlides,
-        totalSlides - 1,
-        renderCtaBody(values),
-        'is-cta',
-        'slide-cta',
-        helpers
-      )
-    );
+            <div class="story-inner">
+              <div class="story-status-bar">
+                <span>9:41</span>
+                <div class="story-status-icons">
+                  <span class="status-pill"></span>
+                  <span class="status-pill" style="width:18px;"></span>
+                  <span class="status-pill" style="width:34px;"></span>
+                </div>
+              </div>
+
+              <div class="story-progress">
+                ${progressHtml}
+              </div>
+
+              <div class="story-chat-header">
+                <div class="story-avatar">${escapeHtml(avatar)}</div>
+                <div class="story-header-info">
+                  <div class="story-chat-name">${chatName}</div>
+                  <div class="story-chat-status">${chatStatus}</div>
+                </div>
+                <div class="story-header-right">…</div>
+              </div>
+
+              <div class="story-panel">
+                <div class="story-badge">Folge #${episodeNumber}</div>
+
+                <div class="story-messages">
+                  ${messagesHtml}
+                </div>
+
+                <div class="story-input-wrap">
+                  <div class="story-input-bar">
+                    <div class="story-input-field">${inputPlaceholder}</div>
+                    <div class="story-send-btn">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <div class="story-footer-card">
+                    <div class="story-footer-kicker">${showName}</div>
+                    <div class="story-footer-title">${episodeTitle}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="story-brand-row">
+                <div class="story-brand">${showName}</div>
+                <div class="story-handle">${handle}</div>
+              </div>
+            </div>
+
+            <div class="story-accent-line"></div>
+          </div>
+        `,
+      });
+    });
+
+    slides.push({
+      kind: 'cta',
+      index: totalSlides - 1,
+      total: totalSlides,
+      html: `
+        <div class="story">
+          <div class="dynamic-island"></div>
+
+          <div class="cta-slide" style="display:flex;">
+            <div class="story-status-bar">
+              <span>9:41</span>
+              <div class="story-status-icons">
+                <span class="status-pill"></span>
+                <span class="status-pill" style="width:18px;"></span>
+                <span class="status-pill" style="width:34px;"></span>
+              </div>
+            </div>
+
+            <div class="story-progress" style="padding-top:62px;">
+              ${buildProgressBars(totalSlides, totalSlides - 1, true)}
+            </div>
+
+            <div class="story-chat-header">
+              <div class="story-avatar">${escapeHtml(avatar)}</div>
+              <div class="story-header-info">
+                <div class="story-chat-name">${chatName}</div>
+                <div class="story-chat-status">${chatStatus}</div>
+              </div>
+              <div class="story-header-right">…</div>
+            </div>
+
+            <div class="cta-inner">
+              <div class="cta-section">
+                <div class="cta-badge">Neue Podcast-Folge</div>
+
+                <div class="cta-card">
+                  <div class="cta-card-top">
+                    <div class="cta-play-circle">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                      </svg>
+                    </div>
+                    <div class="cta-card-copy">
+                      <div class="cta-heading">${ctaHeading}</div>
+                      <div class="cta-episode">Folge #${episodeNumber} · ${episodeTitle}</div>
+                      <div class="cta-sub">${showName}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="cta-button">${ctaButtonLabel}</div>
+                <div class="cta-handle">${ctaHandleText}</div>
+              </div>
+            </div>
+
+            <div class="story-brand-row">
+              <div class="story-brand">${showName}</div>
+              <div class="story-handle">${handle}</div>
+            </div>
+          </div>
+
+          <div class="story-accent-line"></div>
+        </div>
+      `,
+    });
 
     return slides;
   },
-  rawHtmlPlaceholders: ['progressBarsHtml', 'storyBodyHtml'],
 };
