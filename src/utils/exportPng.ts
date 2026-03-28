@@ -3,6 +3,7 @@ import { applyGeneralPostTitleFit } from '../lib/grafik-builder/useFitText';
 import { buildExportMarkup, EXPORT_ROOT_SELECTOR } from './previewDocument';
 
 const EXPORT_RENDER_SETTLE_DELAY_MS = 75;
+const EXPORT_IMAGE_READY_TIMEOUT_MS = 1000;
 const EXPORT_CONTAINER_ERROR = 'Export-Container konnte nicht erzeugt werden.';
 const PNG_EXPORT_STATUS = {
   preparing: 'PNG wird erstellt…',
@@ -51,50 +52,61 @@ function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
   });
 }
 
-async function waitForImageReady(image: HTMLImageElement): Promise<void> {
-  if (image.complete && image.naturalWidth > 0) {
-    if (typeof image.decode === 'function') {
-      try {
-        await image.decode();
-      } catch {
-        // Ignore decode failures for already loaded images and continue exporting.
-      }
-    }
-
-    return;
-  }
-
-  await new Promise<void>((resolve, reject) => {
-    const handleLoad = () => {
-      cleanup();
-      resolve();
-    };
-    const handleError = () => {
-      cleanup();
-      reject(new Error('Bild konnte für den Export nicht geladen werden.'));
-    };
-    const cleanup = () => {
-      image.removeEventListener('load', handleLoad);
-      image.removeEventListener('error', handleError);
-    };
-
-    image.addEventListener('load', handleLoad, { once: true });
-    image.addEventListener('error', handleError, { once: true });
+function resolveAfterTimeout(timeoutMs: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, timeoutMs);
   });
+}
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T | undefined> {
+  return new Promise((resolve, reject) => {
+    const timeoutId = window.setTimeout(() => {
+      resolve(undefined);
+    }, timeoutMs);
+
+    promise
+      .then((value) => {
+        window.clearTimeout(timeoutId);
+        resolve(value);
+      })
+      .catch((error: unknown) => {
+        window.clearTimeout(timeoutId);
+        reject(error);
+      });
+  });
+}
+
+async function waitForImageToBeReady(image: HTMLImageElement): Promise<void> {
+  if (!image.complete) {
+    await new Promise<void>((resolve) => {
+      const timeoutId = window.setTimeout(() => {
+        cleanup();
+        resolve();
+      }, EXPORT_IMAGE_READY_TIMEOUT_MS);
+
+      function cleanup(): void {
+        window.clearTimeout(timeoutId);
+        image.removeEventListener('load', handleReady);
+        image.removeEventListener('error', handleReady);
+      }
+
+      function handleReady(): void {
+        cleanup();
+        resolve();
+      }
+
+      image.addEventListener('load', handleReady, { once: true });
+      image.addEventListener('error', handleReady, { once: true });
+    });
+  }
 
   if (typeof image.decode === 'function') {
     try {
-      await image.decode();
+      await withTimeout(image.decode(), EXPORT_IMAGE_READY_TIMEOUT_MS);
     } catch {
-      // Ignore decode failures after a successful load event and continue exporting.
+      // Ignore decode failures and continue exporting.
     }
   }
-}
-
-async function waitForImagesReady(container: ParentNode): Promise<void> {
-  const images = Array.from(container.querySelectorAll('img'));
-
-  await Promise.all(images.map((image) => waitForImageReady(image)));
 }
 
 /**
@@ -147,10 +159,11 @@ export async function exportPng(
 
     reportExportStatus(PNG_EXPORT_STATUS.exportRootFound, onStatus);
     applyGeneralPostTitleFit(graphicRoot);
-    await waitForImagesReady(graphicRoot);
-    await new Promise<void>((resolve) => {
-      window.setTimeout(resolve, EXPORT_RENDER_SETTLE_DELAY_MS);
-    });
+    const photo = graphicRoot.querySelector('img.tile-photo');
+    if (photo instanceof HTMLImageElement) {
+      await waitForImageToBeReady(photo);
+    }
+    await resolveAfterTimeout(EXPORT_RENDER_SETTLE_DELAY_MS);
     let dataUrl: string | null = null;
     try {
       const canvas = await html2canvas(graphicRoot, {
