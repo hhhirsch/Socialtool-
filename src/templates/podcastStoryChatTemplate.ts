@@ -1,4 +1,4 @@
-import type { GraphicTemplate } from './types';
+import type { FieldValues, GraphicTemplate, TemplateSlideRenderDefinition } from './types';
 
 type StoryMessage = {
   kind: 'message' | 'typing';
@@ -9,11 +9,21 @@ type StoryMessage = {
 };
 
 type StorySlide = {
+  id: string;
   kind: 'chat' | 'cta';
   index: number;
   total: number;
   html: string;
 };
+
+function isEmojiOnlyText(value: string): boolean {
+  const trimmed = value.trim();
+  if (!trimmed || Array.from(trimmed).length > 6) {
+    return false;
+  }
+
+  return /^(?:\p{Extended_Pictographic}|\u200D|\uFE0F|\s){1,12}$/u.test(value);
+}
 
 function escapeHtml(value: string): string {
   return value
@@ -47,8 +57,7 @@ function parseStoryLine(line: string): StoryMessage {
     text = parts.join('|').trim();
   }
 
-  const emojiOnly =
-    /^[\p{Emoji}\u200d\ufe0f\s]{1,12}$/u.test(text) && text.trim().length <= 6;
+  const emojiOnly = isEmojiOnlyText(text);
 
   return {
     kind: 'message',
@@ -128,6 +137,7 @@ export const podcastStoryChatTemplate: GraphicTemplate = {
   description: '9:16 Story-Chat-Slides mit kumulativem Nachrichtenverlauf und CTA-Slide.',
   category: 'podcast',
   supportedPresetIds: ['1080x1920'],
+  htmlTemplate: '',
   css: `
     :root {
       --lav: #c4a0d0;
@@ -676,7 +686,7 @@ TYPING`,
     inputPlaceholder: 'Nachricht schreiben...',
   },
 
-  resolveSlides: (values: Record<string, string>): StorySlide[] => {
+  resolveSlides: (values: FieldValues): TemplateSlideRenderDefinition[] => {
     const raw = String(values.messages ?? '');
     const blocks = raw
       .split('---')
@@ -714,6 +724,7 @@ TYPING`,
       const messagesHtml = buildMessagesHtml(cumulative, slideMessages.length);
 
       slides.push({
+        id: `chat-${index + 1}`,
         kind: 'chat',
         index,
         total: totalSlides,
@@ -781,6 +792,7 @@ TYPING`,
     });
 
     slides.push({
+      id: 'cta',
       kind: 'cta',
       index: totalSlides - 1,
       total: totalSlides,
