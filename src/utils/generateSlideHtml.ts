@@ -1,6 +1,6 @@
 import { buildPreviewDocument } from './previewDocument';
-import { renderTemplate } from './renderTemplate';
 import type { FieldValues, GraphicTemplate } from '../types';
+import { resolveTemplateSlides } from './resolveTemplateSlides';
 
 /**
  * Generates a complete, standalone HTML document string for the given template and field values.
@@ -11,16 +11,13 @@ export function generateSlideHtml(
   template: GraphicTemplate,
   fieldValues: FieldValues,
   width: number,
-  height: number
+  height: number,
+  slideIndex = 0
 ): string {
-  const resolvedValues = template.resolveFieldValues?.(fieldValues) ?? fieldValues;
-  const renderedHtml = renderTemplate(
-    template.htmlTemplate,
-    resolvedValues,
-    template.fields,
-    template.rawHtmlPlaceholders
-  );
-  return buildPreviewDocument(renderedHtml, template.css, width, height);
+  const slides = resolveTemplateSlides(template, fieldValues);
+  const activeSlide = slides[Math.min(Math.max(slideIndex, 0), slides.length - 1)] ?? slides[0];
+
+  return buildPreviewDocument(activeSlide.html, activeSlide.css, width, height);
 }
 
 /**
@@ -30,8 +27,9 @@ export async function copySlideHtml(
   template: GraphicTemplate,
   fieldValues: FieldValues,
   width: number,
-  height: number
+  height: number,
+  slideIndex = 0
 ): Promise<void> {
-  const html = generateSlideHtml(template, fieldValues, width, height);
+  const html = generateSlideHtml(template, fieldValues, width, height, slideIndex);
   await navigator.clipboard.writeText(html);
 }

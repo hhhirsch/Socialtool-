@@ -1,6 +1,7 @@
 import html2canvas from 'html2canvas';
 import { applyGeneralPostTitleFit } from '../lib/grafik-builder/useFitText';
 import { buildExportMarkup, EXPORT_ROOT_SELECTOR } from './previewDocument';
+import type { ResolvedTemplateSlide } from './resolveTemplateSlides';
 
 const EXPORT_RENDER_SETTLE_DELAY_MS = 75;
 const EXPORT_IMAGE_READY_TIMEOUT_MS = 1000;
@@ -17,6 +18,7 @@ const PNG_EXPORT_STATUS = {
 } as const;
 
 const EXPORT_PIXEL_RATIO = 2;
+const MULTI_SLIDE_DOWNLOAD_DELAY_MS = 150;
 
 export function isIOSWebKit(): boolean {
   return (
@@ -215,5 +217,29 @@ export async function exportPng(
     throw normalizedError;
   } finally {
     mountNode?.remove();
+  }
+}
+
+export async function exportPngSlides(
+  slides: ResolvedTemplateSlide[],
+  width: number,
+  height: number,
+  onStatus?: (message: string) => void
+): Promise<void> {
+  if (slides.length === 0) {
+    return;
+  }
+
+  if (isIOSWebKit()) {
+    throw new Error('Mehrere Story-Slides können auf iPhone/Safari aktuell nur einzeln exportiert werden.');
+  }
+
+  for (const [index, slide] of slides.entries()) {
+    onStatus?.(`Story-Slide ${index + 1} von ${slides.length} wird exportiert…`);
+    await exportPng(slide.html, slide.css, width, height, slide.filename, onStatus);
+
+    if (index < slides.length - 1) {
+      await resolveAfterTimeout(MULTI_SLIDE_DOWNLOAD_DELAY_MS);
+    }
   }
 }

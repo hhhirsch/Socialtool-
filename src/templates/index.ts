@@ -6,6 +6,7 @@ import { podcastPhotoQuoteTileTemplate } from './podcastPhotoQuoteTileTemplate';
 import { podcastQuoteTileTemplate } from './podcastQuoteTileTemplate';
 import { toWatchTemplate } from './toWatchTemplate';
 import { podcastChatTileTemplate } from './podcastChatTileTemplate';
+import { podcastStoryChatTemplate } from './podcastStoryChatTemplate';
 
 export const GRAPHIC_TEMPLATES = [
   toWatchTemplate,
@@ -16,6 +17,7 @@ export const GRAPHIC_TEMPLATES = [
   podcastPhotoQuoteTileTemplate,
   podcastQuoteTileTemplate,
   podcastChatTileTemplate,
+  podcastStoryChatTemplate,
 ];
 
 export const DEFAULT_TEMPLATE_ID = GRAPHIC_TEMPLATES[0].id;
@@ -30,3 +32,4 @@ export * from './generalPostTemplate';
 export * from './podcastPhotoQuoteTileTemplate';
 export * from './podcastChatTileTemplate';
 export * from './podcastQuoteTileTemplate';
+export * from './podcastStoryChatTemplate';

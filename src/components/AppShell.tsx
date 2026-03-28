@@ -1,12 +1,12 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppState } from '../hooks/useAppState';
-import { exportPng, isIOSWebKit } from '../utils/exportPng';
+import { exportPng, exportPngSlides, isIOSWebKit } from '../utils/exportPng';
 import { exportPdf } from '../utils/exportPdf';
 import { generateFilename } from '../utils/generateFilename';
 import { copySlideHtml } from '../utils/generateSlideHtml';
 import { buildPreviewDocument } from '../utils/previewDocument';
 import { getPresetById } from '../utils/presets';
-import { renderTemplate } from '../utils/renderTemplate';
+import { resolveTemplateSlides } from '../utils/resolveTemplateSlides';
 import { getTemplateById, getTemplatesByCategory } from '../utils/templateRegistry';
 import { CategorySelector } from './CategorySelector';
 import { DynamicFieldForm } from './DynamicFieldForm';
@@ -30,6 +30,7 @@ export function AppShell() {
   const [copied, setCopied] = useState(false);
   const [exportStatus, setExportStatus] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const {
     state,
     toast,
@@ -64,29 +65,24 @@ export function AppShell() {
     [state.selectedPresetId]
   );
   const isIOS = useMemo(() => isIOSWebKit(), []);
-  const resolvedFieldValues = useMemo(
-    () => selectedTemplate.resolveFieldValues?.(state.fieldValues) ?? state.fieldValues,
+  const renderedSlides = useMemo(
+    () => resolveTemplateSlides(selectedTemplate, state.fieldValues),
     [selectedTemplate, state.fieldValues]
   );
+  const activeSlide = renderedSlides[Math.min(activeSlideIndex, renderedSlides.length - 1)] ?? renderedSlides[0];
+  const isMultiSlideTemplate = renderedSlides.length > 1;
 
-  const renderedHtml = useMemo(
-    () =>
-      renderTemplate(
-        selectedTemplate.htmlTemplate,
-        resolvedFieldValues,
-        selectedTemplate.fields,
-        selectedTemplate.rawHtmlPlaceholders
-      ),
-    [
-      resolvedFieldValues,
-      selectedTemplate.fields,
-      selectedTemplate.htmlTemplate,
-      selectedTemplate.rawHtmlPlaceholders,
-    ]
-  );
+  useEffect(() => {
+    setActiveSlideIndex(0);
+  }, [selectedTemplate.id]);
+
+  useEffect(() => {
+    setActiveSlideIndex((currentIndex) => Math.max(0, Math.min(currentIndex, renderedSlides.length - 1)));
+  }, [renderedSlides.length]);
+
   const previewDocumentHtml = useMemo(
-    () => buildPreviewDocument(renderedHtml, selectedTemplate.css, selectedPreset.width, selectedPreset.height),
-    [renderedHtml, selectedPreset.height, selectedPreset.width, selectedTemplate.css]
+    () => buildPreviewDocument(activeSlide.html, activeSlide.css, selectedPreset.width, selectedPreset.height),
+    [activeSlide, selectedPreset.height, selectedPreset.width]
   );
 
   const handleExportPng = useCallback(async () => {
@@ -95,11 +91,11 @@ export function AppShell() {
 
     try {
       await exportPng(
-        renderedHtml,
-        selectedTemplate.css,
+        activeSlide.html,
+        activeSlide.css,
         selectedPreset.width,
         selectedPreset.height,
-        generateFilename(selectedPreset, selectedTemplate),
+        isMultiSlideTemplate ? activeSlide.filename : generateFilename(selectedPreset, selectedTemplate),
         setExportStatus
       );
     } catch (exportError) {
@@ -112,18 +108,42 @@ export function AppShell() {
       setIsExporting(false);
       window.setTimeout(() => setExportStatus(null), EXPORT_STATUS_DISPLAY_DURATION_MS);
     }
-  }, [renderedHtml, selectedPreset, selectedTemplate, showError]);
+  }, [activeSlide, isMultiSlideTemplate, selectedPreset, selectedTemplate, showError]);
+
+  const handleExportAllSlides = useCallback(async () => {
+    setIsExporting(true);
+    setExportStatus('Story-Slides werden erstellt…');
+
+    try {
+      await exportPngSlides(renderedSlides, selectedPreset.width, selectedPreset.height, setExportStatus);
+    } catch (exportError) {
+      showError(
+        `Story-Export fehlgeschlagen: ${
+          exportError instanceof Error ? exportError.message : 'Unbekannter Fehler'
+        }`
+      );
+    } finally {
+      setIsExporting(false);
+      window.setTimeout(() => setExportStatus(null), EXPORT_STATUS_DISPLAY_DURATION_MS);
+    }
+  }, [renderedSlides, selectedPreset.height, selectedPreset.width, showError]);
 
   const handleCopyHtml = useCallback(async () => {
     try {
-      await copySlideHtml(selectedTemplate, resolvedFieldValues, selectedPreset.width, selectedPreset.height);
+      await copySlideHtml(
+        selectedTemplate,
+        state.fieldValues,
+        selectedPreset.width,
+        selectedPreset.height,
+        activeSlideIndex
+      );
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       showToast('HTML in die Zwischenablage kopiert.');
     } catch {
       showError('HTML konnte nicht in die Zwischenablage kopiert werden.');
     }
-  }, [selectedTemplate, resolvedFieldValues, selectedPreset.width, selectedPreset.height, showToast, showError]);
+  }, [activeSlideIndex, selectedTemplate, selectedPreset.width, selectedPreset.height, showToast, showError, state.fieldValues]);
 
   const handleExportPdf = useCallback(async () => {
     try {
@@ -276,28 +296,52 @@ export function AppShell() {
               </div>
             </div>
 
-            <PreviewPanel
-              documentHtml={previewDocumentHtml}
-              preset={selectedPreset}
-              backgroundMode={state.backgroundMode}
-              zoomLevel={state.zoomLevel}
-              onBackgroundChange={setBackgroundMode}
-              onZoomChange={setZoomLevel}
-              onScaleChange={setPreviewScale}
-              frameRef={previewFrameRef}
-            />
+              <PreviewPanel
+                documentHtml={previewDocumentHtml}
+                preset={selectedPreset}
+                backgroundMode={state.backgroundMode}
+                zoomLevel={state.zoomLevel}
+                onBackgroundChange={setBackgroundMode}
+                onZoomChange={setZoomLevel}
+                onScaleChange={setPreviewScale}
+                frameRef={previewFrameRef}
+                slideCount={renderedSlides.length}
+                activeSlideIndex={activeSlideIndex}
+                onPreviousSlide={() => setActiveSlideIndex((currentIndex) => Math.max(0, currentIndex - 1))}
+                onNextSlide={() =>
+                  setActiveSlideIndex((currentIndex) => Math.min(renderedSlides.length - 1, currentIndex + 1))
+                }
+              />
 
-            <div className={styles.exportGrid}>
-              <button
-                type="button"
-                onClick={handleExportPng}
-                disabled={isExporting}
-                className={styles.exportPrimaryButton}
-              >
-                {isExporting ? 'Wird erstellt…' : isIOS ? 'PNG öffnen' : 'PNG exportieren'}
-              </button>
-              <button
-                type="button"
+              <div className={styles.exportGrid}>
+                {isMultiSlideTemplate && (
+                  <button
+                    type="button"
+                    onClick={handleExportAllSlides}
+                    disabled={isExporting}
+                    className={styles.exportPrimaryButton}
+                  >
+                    {isExporting ? 'Wird erstellt…' : 'Alle Story-Slides exportieren'}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleExportPng}
+                  disabled={isExporting}
+                  className={isMultiSlideTemplate ? styles.exportSecondaryButton : styles.exportPrimaryButton}
+                >
+                  {isExporting
+                    ? 'Wird erstellt…'
+                    : isMultiSlideTemplate
+                      ? isIOS
+                        ? 'Aktuelle Slide öffnen'
+                        : 'Aktuelle Slide exportieren'
+                      : isIOS
+                        ? 'PNG öffnen'
+                        : 'PNG exportieren'}
+                </button>
+                <button
+                  type="button"
                 onClick={handleExportPdf}
                 className={styles.exportSecondaryButton}
               >
@@ -363,16 +407,17 @@ export function AppShell() {
                 <span>Vorlage: {selectedTemplate.name}</span>
                 <span>Preset: {selectedPreset.label}</span>
                 <span>Skalierung: {Math.round(state.previewScale * 100)}%</span>
+                {isMultiSlideTemplate && <span>Slide: {activeSlide.label}</span>}
               </div>
 
               <div className={styles.codeGrid}>
                 <label className={styles.codeBlock}>
                   <span>Generiertes HTML</span>
-                  <textarea readOnly value={renderedHtml} className={styles.codeArea} />
+                  <textarea readOnly value={activeSlide.html} className={styles.codeArea} />
                 </label>
                 <label className={styles.codeBlock}>
                   <span>Template CSS</span>
-                  <textarea readOnly value={selectedTemplate.css} className={styles.codeArea} />
+                  <textarea readOnly value={activeSlide.css} className={styles.codeArea} />
                 </label>
               </div>
             </section>
