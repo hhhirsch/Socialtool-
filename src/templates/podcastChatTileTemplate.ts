@@ -22,7 +22,7 @@ export const podcastChatTileTemplate: GraphicTemplate = {
             <div class="chat-avatar">{{avatar}}</div>
             <div class="chat-header-info">
               <div class="chat-name">{{chatName}}</div>
-              <div class="chat-status">{{chatStatus}}</div>
+              <div class="chat-status">{{participantsLabel}}</div>
             </div>
           </div>
 
@@ -31,7 +31,7 @@ export const podcastChatTileTemplate: GraphicTemplate = {
           </div>
 
           <div class="chat-input-bar">
-            <div class="chat-input-field">iMessage</div>
+            <div class="chat-input-field">{{inputPlaceholder}}</div>
             <div class="chat-send-btn">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
@@ -410,14 +410,42 @@ export const podcastChatTileTemplate: GraphicTemplate = {
   fields: [
     {
       id: 'messages',
-      label: 'Chat-Nachrichten',
-      type: 'textarea',
-      multiline: true,
-      helpText:
-        'IN: eingehend links · OUT: ausgehend rechts · EMOJI: großes Emoji · TYPING für Tipp-Animation · Zeit mit | 14:22 anhängen',
+      label: 'Nachrichten',
+      type: 'group',
+      itemLabel: 'Nachricht',
+      minItems: 1,
+      addButtonLabel: '+ Nachricht hinzufügen',
+      removeButtonLabel: 'Nachricht entfernen',
+      fields: [
+        {
+          id: 'messageType',
+          label: 'Typ',
+          type: 'select',
+          options: [
+            { label: 'Eingehend', value: 'in' },
+            { label: 'Ausgehend', value: 'out' },
+            { label: 'Emoji', value: 'emoji' },
+            { label: 'Typing', value: 'typing' },
+          ],
+        },
+        {
+          id: 'messageText',
+          label: 'Text',
+          type: 'text',
+          placeholder: 'Nachricht eingeben',
+          helpText: 'Für Typing optional, sonst für die Anzeige genutzt.',
+        },
+        {
+          id: 'messageTime',
+          label: 'Zeit',
+          type: 'text',
+          placeholder: 'z. B. 14:22',
+        },
+      ],
     },
     { id: 'chatName', label: 'Chat-Name', type: 'text' },
-    { id: 'chatStatus', label: 'Status-Zeile', type: 'text' },
+    { id: 'participantsLabel', label: 'Teilnehmer-Zeile', type: 'text' },
+    { id: 'inputPlaceholder', label: 'CTA im Eingabefeld', type: 'text' },
     { id: 'avatar', label: 'Avatar-Kürzel', type: 'text' },
     { id: 'episodeNumber', label: 'Folgennummer', type: 'number' },
     { id: 'episodeTitle', label: 'Folgentitel', type: 'text' },
@@ -426,13 +454,26 @@ export const podcastChatTileTemplate: GraphicTemplate = {
     { id: 'showName', label: 'Showname / Logo', type: 'text' },
   ],
   defaults: {
-    messages: `IN: Anıl, was hat Lyoner-Wurst für dich mit Identität zu tun? | 14:22
-OUT: Alter, alles. Wenn meine Oma die Lyoner aufgeschnitten hat, war das wie ein Ritual. | 14:23
-IN: Ein Ritual? 😄 | 14:23
-OUT: Ja! Das Essen war immer der Moment, wo alle zusammenkamen. Da war alles gut. | 14:24
-TYPING`,
+    'messages.0.messageType': 'in',
+    'messages.0.messageText': 'Anıl, was hat Lyoner-Wurst für dich mit Identität zu tun?',
+    'messages.0.messageTime': '14:22',
+    'messages.1.messageType': 'out',
+    'messages.1.messageText':
+      'Alter, alles. Wenn meine Oma die Lyoner aufgeschnitten hat, war das wie ein Ritual.',
+    'messages.1.messageTime': '14:23',
+    'messages.2.messageType': 'emoji',
+    'messages.2.messageText': '😄',
+    'messages.2.messageTime': '14:23',
+    'messages.3.messageType': 'out',
+    'messages.3.messageText':
+      'Ja! Das Essen war immer der Moment, wo alle zusammenkamen. Da war alles gut.',
+    'messages.3.messageTime': '14:24',
+    'messages.4.messageType': 'typing',
+    'messages.4.messageText': '',
+    'messages.4.messageTime': '',
     chatName: 'Family Chat',
-    chatStatus: 'Yasmin, Anıl',
+    participantsLabel: 'Yasmin und 5 weitere Personen',
+    inputPlaceholder: 'Schreib in den Family Chat!',
     avatar: 'FC',
     episodeNumber: '4',
     episodeTitle: 'Büchse der Lyoner – mit Anıl',
@@ -449,57 +490,46 @@ TYPING`,
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
 
-    const rawMessages = String(values.messages ?? '');
-    const lines = rawMessages
-      .split('\n')
-      .map((line) => line.trim())
-      .filter(Boolean);
+    const messageKeys = Object.keys(values)
+      .map((key) => key.match(/^messages\.(\d+)\.messageType$/))
+      .filter((match): match is RegExpMatchArray => match !== null)
+      .map((match) => Number(match[1]))
+      .sort((left, right) => left - right);
 
-    const messagesHtml = lines
-      .map((line) => {
-        if (line.toUpperCase() === 'TYPING') {
+    const messagesHtml = messageKeys
+      .map((index) => {
+        const messageType = String(values[`messages.${index}.messageType`] ?? 'in').trim();
+        const messageText = String(values[`messages.${index}.messageText`] ?? '').trim();
+        const messageTime = String(values[`messages.${index}.messageTime`] ?? '').trim();
+
+        if (messageType === 'typing') {
           return `
             <div class="msg msg-typing">
               <div class="typing-dot"></div>
               <div class="typing-dot"></div>
               <div class="typing-dot"></div>
+              ${messageTime ? `<span class="msg-time">${escapeHtml(messageTime)}</span>` : ''}
             </div>
           `;
         }
 
-        let direction = 'in';
-        let isEmoji = false;
-        let text = line;
-
-        if (/^OUT:/i.test(text)) {
-          direction = 'out';
-          text = text.replace(/^OUT:\s*/i, '');
-        } else if (/^IN:/i.test(text)) {
-          direction = 'in';
-          text = text.replace(/^IN:\s*/i, '');
-        } else if (/^EMOJI:/i.test(text)) {
-          isEmoji = true;
-          direction = 'in';
-          text = text.replace(/^EMOJI:\s*/i, '');
+        if (!messageText) {
+          return '';
         }
 
-        let time = '';
-        const timeParts = text.split('|');
-        if (timeParts.length > 1) {
-          time = timeParts.pop()?.trim() ?? '';
-          text = timeParts.join('|').trim();
-        }
+        const messageClass =
+          messageType === 'out'
+            ? 'msg msg-out'
+            : messageType === 'emoji'
+              ? 'msg msg-in msg-emoji'
+              : 'msg msg-in';
 
-        const messageClass = isEmoji
-          ? \`msg msg-\${direction} msg-emoji\`
-          : \`msg msg-\${direction}\`;
-
-        return \`
-          <div class="\${messageClass}">
-            \${escapeHtml(text)}
-            \${time ? \`<span class="msg-time">\${escapeHtml(time)}</span>\` : ''}
+        return `
+          <div class="${messageClass}">
+            ${escapeHtml(messageText)}
+            ${messageTime ? `<span class="msg-time">${escapeHtml(messageTime)}</span>` : ''}
           </div>
-        \`;
+        `;
       })
       .join('');
 
@@ -509,7 +539,7 @@ TYPING`,
       .filter(Boolean);
 
     const tagsHtml = tags
-      .map((tag) => \`<span class="tile-tag">\${escapeHtml(tag)}</span>\`)
+      .map((tag) => `<span class="tile-tag">${escapeHtml(tag)}</span>`)
       .join('');
 
     return {
