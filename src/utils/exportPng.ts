@@ -84,14 +84,23 @@ function normalizeUppercaseSharpS(root: HTMLElement): void {
   }
 
   for (const textNode of textNodesToNormalize) {
-    textNode.textContent = textNode.textContent?.toLocaleUpperCase('de-DE') ?? textNode.textContent;
+    const textContent = textNode.textContent;
+    if (textContent !== null) {
+      textNode.textContent = textContent.toLocaleUpperCase('de-DE');
+    }
   }
 }
 
 function assertValidExportRoot(root: HTMLElement): void {
   const { width, height } = root.getBoundingClientRect();
 
-  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+  if (!Number.isFinite(width) || !Number.isFinite(height)) {
+    throw new Error(
+      `Ungültige Exportgröße am Root: width=${String(width)}, height=${String(height)}`
+    );
+  }
+
+  if (width <= 0 || height <= 0) {
     throw new Error(
       `Ungültige Exportgröße am Root: width=${String(width)}, height=${String(height)}`
     );
