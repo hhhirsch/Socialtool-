@@ -5,6 +5,7 @@ import type { ResolvedTemplateSlide } from './resolveTemplateSlides';
 
 const EXPORT_RENDER_SETTLE_DELAY_MS = 75;
 const EXPORT_IMAGE_READY_TIMEOUT_MS = 1000;
+const MAX_SUSPICIOUS_ELEMENTS_TO_LOG = 10;
 const EXPORT_CONTAINER_ERROR = 'Export-Container konnte nicht erzeugt werden.';
 const PNG_EXPORT_STATUS = {
   preparing: 'PNG wird erstellt…',
@@ -65,9 +66,13 @@ function normalizeUppercaseSharpS(root: HTMLElement): void {
   let currentNode = textWalker.nextNode();
 
   while (currentNode) {
-    if (currentNode instanceof Text && currentNode.data.includes('ß')) {
+    if (currentNode instanceof Text) {
       const parentElement = currentNode.parentElement;
-      if (parentElement && getComputedStyle(parentElement).textTransform === 'uppercase') {
+      if (
+        parentElement &&
+        getComputedStyle(parentElement).textTransform === 'uppercase' &&
+        currentNode.data.includes('ß')
+      ) {
         currentNode.textContent = currentNode.data.toLocaleUpperCase('de-DE');
       }
     }
@@ -91,7 +96,7 @@ function logSuspiciousExportLayout(root: HTMLElement): void {
   const elementWalker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
   let currentNode: Node | null = elementWalker.currentNode;
 
-  while (currentNode && suspiciousElements.length < 10) {
+  while (currentNode && suspiciousElements.length < MAX_SUSPICIOUS_ELEMENTS_TO_LOG) {
     if (currentNode instanceof HTMLElement) {
       const rect = currentNode.getBoundingClientRect();
       const hasInvalidRect =
