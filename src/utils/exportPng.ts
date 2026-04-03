@@ -89,7 +89,7 @@ function assertValidExportRoot(root: HTMLElement): void {
 function logSuspiciousExportLayout(root: HTMLElement): void {
   const suspiciousElements: string[] = [];
   const elementWalker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
-  let currentNode = elementWalker.currentNode;
+  let currentNode: Node | null = elementWalker.currentNode;
 
   while (currentNode && suspiciousElements.length < 10) {
     if (currentNode instanceof HTMLElement) {
