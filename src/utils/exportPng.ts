@@ -48,6 +48,73 @@ function getExportRoot(container: ParentNode): HTMLElement {
   return exportRoot;
 }
 
+function getElementSelector(element: Element): string {
+  const className = typeof element.className === 'string'
+    ? element.className.trim().split(/\s+/).filter(Boolean).join('.')
+    : '';
+
+  return [
+    element.tagName.toLowerCase(),
+    element.id ? `#${element.id}` : '',
+    className ? `.${className}` : '',
+  ].join('');
+}
+
+function normalizeUppercaseSharpS(root: HTMLElement): void {
+  const textWalker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let currentNode = textWalker.nextNode();
+
+  while (currentNode) {
+    if (currentNode instanceof Text && currentNode.data.includes('ß')) {
+      const parentElement = currentNode.parentElement;
+      if (parentElement && getComputedStyle(parentElement).textTransform === 'uppercase') {
+        currentNode.textContent = currentNode.data.toLocaleUpperCase('de-DE');
+      }
+    }
+
+    currentNode = textWalker.nextNode();
+  }
+}
+
+function assertValidExportRoot(root: HTMLElement): void {
+  const { width, height } = root.getBoundingClientRect();
+
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    throw new Error(
+      `Ungültige Exportgröße am Root: width=${String(width)}, height=${String(height)}`
+    );
+  }
+}
+
+function logSuspiciousExportLayout(root: HTMLElement): void {
+  const suspiciousElements: string[] = [];
+  const elementWalker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+  let currentNode = elementWalker.currentNode;
+
+  while (currentNode && suspiciousElements.length < 10) {
+    if (currentNode instanceof HTMLElement) {
+      const rect = currentNode.getBoundingClientRect();
+      const hasInvalidRect =
+        !Number.isFinite(rect.width) ||
+        !Number.isFinite(rect.height) ||
+        !Number.isFinite(rect.top) ||
+        !Number.isFinite(rect.left);
+
+      if (hasInvalidRect) {
+        suspiciousElements.push(
+          `${getElementSelector(currentNode)} width=${String(rect.width)} height=${String(rect.height)} top=${String(rect.top)} left=${String(rect.left)}`
+        );
+      }
+    }
+
+    currentNode = elementWalker.nextNode();
+  }
+
+  if (suspiciousElements.length > 0) {
+    console.warn('[exportPng] Suspicious export layout detected:', suspiciousElements);
+  }
+}
+
 function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
   return new Promise((resolve) => {
     canvas.toBlob(resolve, 'image/png');
@@ -160,6 +227,9 @@ export async function exportPng(
     const graphicRoot = getExportRoot(mountNode);
 
     reportExportStatus(PNG_EXPORT_STATUS.exportRootFound, onStatus);
+    normalizeUppercaseSharpS(graphicRoot);
+    assertValidExportRoot(graphicRoot);
+    logSuspiciousExportLayout(graphicRoot);
     applyGeneralPostTitleFit(graphicRoot);
     const photo = graphicRoot.querySelector('img.tile-photo');
     if (photo instanceof HTMLImageElement) {
