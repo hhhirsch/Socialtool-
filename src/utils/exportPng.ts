@@ -5,6 +5,7 @@ import type { ResolvedTemplateSlide } from './resolveTemplateSlides';
 
 const EXPORT_RENDER_SETTLE_DELAY_MS = 75;
 const EXPORT_IMAGE_READY_TIMEOUT_MS = 1000;
+const MAX_SUSPICIOUS_ELEMENTS_TO_LOG = 10;
 const EXPORT_CONTAINER_ERROR = 'Export-Container konnte nicht erzeugt werden.';
 const PNG_EXPORT_STATUS = {
   preparing: 'PNG wird erstellt…',
@@ -46,6 +47,108 @@ function getExportRoot(container: ParentNode): HTMLElement {
   }
 
   return exportRoot;
+}
+
+function getElementSelector(element: Element): string {
+  const className = element instanceof SVGElement
+    ? element.className.baseVal.trim().split(/\s+/).filter(Boolean).join('.')
+    : element instanceof HTMLElement
+      ? element.className.trim().split(/\s+/).filter(Boolean).join('.')
+      : '';
+
+  return [
+    element.tagName.toLowerCase(),
+    element.id ? `#${element.id}` : '',
+    className ? `.${className}` : '',
+  ].join('');
+}
+
+function normalizeUppercaseSharpS(root: HTMLElement): void {
+  const textWalker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const textNodesToNormalize: Text[] = [];
+  let currentNode = textWalker.nextNode();
+
+  while (currentNode) {
+    if (currentNode instanceof Text) {
+      const parentElement = currentNode.parentElement;
+      if (
+        parentElement &&
+        getComputedStyle(parentElement).textTransform === 'uppercase' &&
+        currentNode.data.includes('ß')
+      ) {
+        textNodesToNormalize.push(currentNode);
+      }
+    }
+
+    currentNode = textWalker.nextNode();
+  }
+
+  for (const textNode of textNodesToNormalize) {
+    const textContent = textNode.textContent;
+    if (textContent !== null) {
+      textNode.textContent = textContent.toLocaleUpperCase('de-DE');
+    }
+  }
+}
+
+function assertValidExportRoot(root: HTMLElement): void {
+  const { width, height } = root.getBoundingClientRect();
+
+  if (!Number.isFinite(width) || !Number.isFinite(height)) {
+    throw new Error(
+      `Ungültige Exportgröße am Root: width=${String(width)}, height=${String(height)}`
+    );
+  }
+
+  if (width <= 0 || height <= 0) {
+    throw new Error(
+      `Ungültige Exportgröße am Root: width=${String(width)}, height=${String(height)}`
+    );
+  }
+}
+
+function logSuspiciousExportLayout(root: HTMLElement): void {
+  const suspiciousElements: Array<{
+    element: string;
+    width: number;
+    height: number;
+    top: number;
+    left: number;
+  }> = [];
+  const elementWalker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+  const inspectElement = (element: HTMLElement): void => {
+    const rect = element.getBoundingClientRect();
+    const hasInvalidRect =
+      !Number.isFinite(rect.width) ||
+      !Number.isFinite(rect.height) ||
+      !Number.isFinite(rect.top) ||
+      !Number.isFinite(rect.left);
+
+    if (hasInvalidRect) {
+      suspiciousElements.push({
+        element: getElementSelector(element),
+        width: rect.width,
+        height: rect.height,
+        top: rect.top,
+        left: rect.left,
+      });
+    }
+  };
+
+  inspectElement(root);
+  let currentNode = elementWalker.nextNode();
+
+  while (currentNode && suspiciousElements.length < MAX_SUSPICIOUS_ELEMENTS_TO_LOG) {
+    if (currentNode instanceof HTMLElement) {
+      inspectElement(currentNode);
+    }
+
+    currentNode = elementWalker.nextNode();
+  }
+
+  if (suspiciousElements.length > 0) {
+    console.warn('[exportPng] Suspicious export layout detected:', suspiciousElements);
+  }
 }
 
 function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob | null> {
@@ -160,6 +263,9 @@ export async function exportPng(
     const graphicRoot = getExportRoot(mountNode);
 
     reportExportStatus(PNG_EXPORT_STATUS.exportRootFound, onStatus);
+    normalizeUppercaseSharpS(graphicRoot);
+    assertValidExportRoot(graphicRoot);
+    logSuspiciousExportLayout(graphicRoot);
     applyGeneralPostTitleFit(graphicRoot);
     const photo = graphicRoot.querySelector('img.tile-photo');
     if (photo instanceof HTMLImageElement) {
