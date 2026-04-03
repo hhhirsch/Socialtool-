@@ -50,9 +50,11 @@ function getExportRoot(container: ParentNode): HTMLElement {
 }
 
 function getElementSelector(element: Element): string {
-  const className = typeof element.className === 'string'
-    ? element.className.trim().split(/\s+/).filter(Boolean).join('.')
-    : '';
+  const className = element instanceof SVGElement
+    ? element.className.baseVal.trim().split(/\s+/).filter(Boolean).join('.')
+    : element instanceof HTMLElement
+      ? element.className.trim().split(/\s+/).filter(Boolean).join('.')
+      : '';
 
   return [
     element.tagName.toLowerCase(),
@@ -82,7 +84,7 @@ function normalizeUppercaseSharpS(root: HTMLElement): void {
   }
 
   for (const textNode of textNodesToNormalize) {
-    textNode.textContent = textNode.data.toLocaleUpperCase('de-DE');
+    textNode.textContent = textNode.textContent?.toLocaleUpperCase('de-DE') ?? textNode.textContent;
   }
 }
 
