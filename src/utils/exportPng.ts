@@ -63,6 +63,7 @@ function getElementSelector(element: Element): string {
 
 function normalizeUppercaseSharpS(root: HTMLElement): void {
   const textWalker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const textNodesToNormalize: Text[] = [];
   let currentNode = textWalker.nextNode();
 
   while (currentNode) {
@@ -73,11 +74,15 @@ function normalizeUppercaseSharpS(root: HTMLElement): void {
         getComputedStyle(parentElement).textTransform === 'uppercase' &&
         currentNode.data.includes('ß')
       ) {
-        currentNode.textContent = currentNode.data.toLocaleUpperCase('de-DE');
+        textNodesToNormalize.push(currentNode);
       }
     }
 
     currentNode = textWalker.nextNode();
+  }
+
+  for (const textNode of textNodesToNormalize) {
+    textNode.textContent = textNode.data.toLocaleUpperCase('de-DE');
   }
 }
 
@@ -92,24 +97,39 @@ function assertValidExportRoot(root: HTMLElement): void {
 }
 
 function logSuspiciousExportLayout(root: HTMLElement): void {
-  const suspiciousElements: string[] = [];
+  const suspiciousElements: Array<{
+    element: string;
+    width: number;
+    height: number;
+    top: number;
+    left: number;
+  }> = [];
   const elementWalker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
-  let currentNode: Node | null = elementWalker.currentNode;
+  const inspectElement = (element: HTMLElement): void => {
+    const rect = element.getBoundingClientRect();
+    const hasInvalidRect =
+      !Number.isFinite(rect.width) ||
+      !Number.isFinite(rect.height) ||
+      !Number.isFinite(rect.top) ||
+      !Number.isFinite(rect.left);
+
+    if (hasInvalidRect) {
+      suspiciousElements.push({
+        element: getElementSelector(element),
+        width: rect.width,
+        height: rect.height,
+        top: rect.top,
+        left: rect.left,
+      });
+    }
+  };
+
+  inspectElement(root);
+  let currentNode = elementWalker.nextNode();
 
   while (currentNode && suspiciousElements.length < MAX_SUSPICIOUS_ELEMENTS_TO_LOG) {
     if (currentNode instanceof HTMLElement) {
-      const rect = currentNode.getBoundingClientRect();
-      const hasInvalidRect =
-        !Number.isFinite(rect.width) ||
-        !Number.isFinite(rect.height) ||
-        !Number.isFinite(rect.top) ||
-        !Number.isFinite(rect.left);
-
-      if (hasInvalidRect) {
-        suspiciousElements.push(
-          `${getElementSelector(currentNode)} width=${String(rect.width)} height=${String(rect.height)} top=${String(rect.top)} left=${String(rect.left)}`
-        );
-      }
+      inspectElement(currentNode);
     }
 
     currentNode = elementWalker.nextNode();
