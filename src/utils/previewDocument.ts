@@ -3,16 +3,22 @@ import { sanitizeHtml } from './sanitizeHtml';
 export const EXPORT_ROOT_ID = 'graphic-root';
 export const EXPORT_ROOT_SELECTOR = `#${EXPORT_ROOT_ID}[data-export-root="true"]`;
 
+/**
+ * Adds the CSS class for a preset id like `1200x627` to every `.slide` root once.
+ */
 export function applyPresetClassToHtml(documentHtml: string, presetId: string): string {
   const presetClass = `preset-${presetId}`;
 
-  return documentHtml.replace(/class=(['"])([^'"]*\bslide\b[^'"]*)\1/, (match, quote: string, classes: string) => {
-    if (classes.split(/\s+/).includes(presetClass)) {
-      return match;
-    }
+  return documentHtml.replace(
+    /class=(['"])([^'"]*\bslide\b[^'"]*)\1/g,
+    (match, quote: string, classes: string) => {
+      if (classes.split(/\s+/).includes(presetClass)) {
+        return match;
+      }
 
-    return `class=${quote}${classes} ${presetClass}${quote}`;
-  });
+      return `class=${quote}${classes} ${presetClass}${quote}`;
+    }
+  );
 }
 
 function buildGraphicStyles(css: string, width: number, height: number): string {

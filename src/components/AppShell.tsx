@@ -25,6 +25,10 @@ const CATEGORY_LABELS = {
   podcast: 'Podcast',
 } as const;
 
+function getActiveSlideIndex<T>(slides: T[], activeIndex: number): number {
+  return Math.min(activeIndex, slides.length - 1);
+}
+
 export function AppShell() {
   const previewFrameRef = useRef<HTMLIFrameElement>(null);
   const [copied, setCopied] = useState(false);
@@ -69,7 +73,7 @@ export function AppShell() {
     () => resolveTemplateSlides(selectedTemplate, state.fieldValues),
     [selectedTemplate, state.fieldValues]
   );
-  const activeSlide = renderedSlides[Math.min(activeSlideIndex, renderedSlides.length - 1)] ?? renderedSlides[0];
+  const activeSlide = renderedSlides[getActiveSlideIndex(renderedSlides, activeSlideIndex)] ?? renderedSlides[0];
   const renderedSlidesWithPresetClass = useMemo(
     () =>
       renderedSlides.map((slide) => ({
@@ -79,7 +83,7 @@ export function AppShell() {
     [renderedSlides, selectedPreset.id]
   );
   const activeSlideWithPresetClass =
-    renderedSlidesWithPresetClass[Math.min(activeSlideIndex, renderedSlidesWithPresetClass.length - 1)] ??
+    renderedSlidesWithPresetClass[getActiveSlideIndex(renderedSlidesWithPresetClass, activeSlideIndex)] ??
     renderedSlidesWithPresetClass[0];
   const isMultiSlideTemplate = renderedSlides.length > 1;
 
