@@ -133,10 +133,10 @@ export const generalPostTemplate: GraphicTemplate = {
       top: 150px;
       left: 96px;
       right: auto;
-      width: 620px;
+      width: 600px;
       max-width: none;
       margin: 0;
-      font-size: 54px;
+      font-size: 52px;
       line-height: 1.03;
       letter-spacing: -1.1px;
       text-align: left;
@@ -153,7 +153,7 @@ export const generalPostTemplate: GraphicTemplate = {
       top: 385px;
       left: 96px;
       right: auto;
-      width: 520px;
+      width: 500px;
       max-width: none;
       margin: 0;
       font-size: 18px;
@@ -166,13 +166,13 @@ export const generalPostTemplate: GraphicTemplate = {
     }
 
     .preset-1200x644 .s5-panel {
-      width: 280px;
+      width: 320px;
     }
 
     .preset-1200x644 .s5-quote {
-      right: 24px;
-      width: 170px;
-      top: 51%;
+      right: 40px;
+      width: 204px;
+      top: 50%;
       text-align: center;
       display: flex;
       flex-direction: column;
@@ -180,17 +180,20 @@ export const generalPostTemplate: GraphicTemplate = {
     }
 
     .preset-1200x644 .s5-quote-mark {
-      font-size: 62px;
-      margin-bottom: 6px;
+      font-size: 64px;
+      color: rgba(232,184,75,0.18);
+      margin-bottom: 10px;
     }
 
     .preset-1200x644 .s5-quote-text {
-      font-size: 15px;
+      font-size: 22px;
       line-height: 1.38;
-      letter-spacing: -0.15px;
-      max-width: 170px;
+      color: rgba(232,184,75,0.92);
+      letter-spacing: -0.22px;
+      max-width: 204px;
       margin: 0 auto;
       text-align: center;
+      text-shadow: 0 1px 10px rgba(15,23,42,0.2);
     }
 
     .preset-1200x644 .bottom {
@@ -248,10 +251,10 @@ export const generalPostTemplate: GraphicTemplate = {
       top: 75px;
       left: 48px;
       right: auto;
-      width: 310px;
+      width: 300px;
       max-width: none;
       margin: 0;
-      font-size: 27px;
+      font-size: 26px;
       line-height: 1.03;
       letter-spacing: -0.55px;
       text-align: left;
@@ -273,7 +276,7 @@ export const generalPostTemplate: GraphicTemplate = {
       top: 193px;
       left: 48px;
       right: auto;
-      width: 260px;
+      width: 245px;
       max-width: none;
       margin: 0;
       font-size: 9px;
@@ -286,13 +289,13 @@ export const generalPostTemplate: GraphicTemplate = {
     }
 
     .preset-600x322 .s5-panel {
-      width: 140px;
+      width: 160px;
     }
 
     .preset-600x322 .s5-quote {
-      right: 12px;
-      width: 85px;
-      top: 51%;
+      right: 18px;
+      width: 98px;
+      top: 50%;
       text-align: center;
       display: flex;
       flex-direction: column;
@@ -300,17 +303,20 @@ export const generalPostTemplate: GraphicTemplate = {
     }
 
     .preset-600x322 .s5-quote-mark {
-      font-size: 31px;
-      margin-bottom: 3px;
+      font-size: 34px;
+      color: rgba(232,184,75,0.18);
+      margin-bottom: 4px;
     }
 
     .preset-600x322 .s5-quote-text {
-      font-size: 7.5px;
-      line-height: 1.38;
-      letter-spacing: -0.08px;
-      max-width: 85px;
+      font-size: 11px;
+      line-height: 1.4;
+      color: rgba(232,184,75,0.9);
+      letter-spacing: -0.1px;
+      max-width: 98px;
       margin: 0 auto;
       text-align: center;
+      text-shadow: 0 1px 8px rgba(15,23,42,0.18);
     }
 
     .preset-600x322 .bottom {
