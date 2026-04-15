@@ -6,7 +6,7 @@ Eine mobile-first Web-App zum Erstellen wiederverwendbarer LinkedIn-Grafiken. St
 
 - **Formularbasierte Content-Erstellung** mit dynamisch generierten Feldern aus der aktiven Template-Definition
 - **5 LinkedIn-Vorlagen**: Hero Slide, Quote Post, Header Banner, Link Preview Card, Carousel Slide
-- **5 Format-Presets**: 1200×627, 1080×1080, 1080×1350, 1584×396, 1128×191
+- **7 Format-Presets**: 1200×644, 600×322, 1200×627, 1080×1080, 1080×1350, 1584×396, 1128×191
 - **Live-Vorschau im isolierten iframe** mit Fit/50/75/100 Zoom und Hintergrundumschaltung
 - **PNG-Export** in Originalgröße via `html2canvas`
 - **PDF-Export** über eine druckoptimierte Einzelansicht der Grafik

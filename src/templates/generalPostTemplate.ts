@@ -6,7 +6,7 @@ export const generalPostTemplate: GraphicTemplate = {
   name: "Allgemeiner Beitrag",
   description: "Meinungs- oder Einordnungsformat mit Titel, Body und Pull-Quote.",
   category: "business",
-  supportedPresetIds: ["1080x1080", "1080x1350", "1200x627"],
+  supportedPresetIds: ["1080x1080", "1080x1350", "1200x644", "600x322"],
   htmlTemplate: `
     <div class="slide">
       <div class="grid"></div>
@@ -118,18 +118,18 @@ export const generalPostTemplate: GraphicTemplate = {
       letter-spacing: -0.5px;
     }
     
-    .preset-1200x627 .tag {
+    .preset-1200x644 .tag {
       top: 58px;
       left: 96px;
     }
 
-    .preset-1200x627 .s5-topic {
+    .preset-1200x644 .s5-topic {
       top: 98px;
       left: 96px;
       transform: none;
     }
 
-    .preset-1200x627 .s5-title {
+    .preset-1200x644 .s5-title {
       top: 150px;
       left: 96px;
       right: auto;
@@ -143,13 +143,13 @@ export const generalPostTemplate: GraphicTemplate = {
       max-height: 210px;
     }
 
-    .preset-1200x627 .s5-rule {
+    .preset-1200x644 .s5-rule {
       top: 360px;
       left: 96px;
       transform: none;
     }
 
-    .preset-1200x627 .s5-body {
+    .preset-1200x644 .s5-body {
       top: 385px;
       left: 96px;
       right: auto;
@@ -161,15 +161,15 @@ export const generalPostTemplate: GraphicTemplate = {
       text-align: left;
     }
 
-    .preset-1200x627 .s5-body:empty {
+    .preset-1200x644 .s5-body:empty {
       display: none;
     }
 
-    .preset-1200x627 .s5-panel {
+    .preset-1200x644 .s5-panel {
       width: 280px;
     }
 
-    .preset-1200x627 .s5-quote {
+    .preset-1200x644 .s5-quote {
       right: 24px;
       width: 170px;
       top: 51%;
@@ -179,12 +179,12 @@ export const generalPostTemplate: GraphicTemplate = {
       align-items: center;
     }
 
-    .preset-1200x627 .s5-quote-mark {
+    .preset-1200x644 .s5-quote-mark {
       font-size: 62px;
       margin-bottom: 6px;
     }
 
-    .preset-1200x627 .s5-quote-text {
+    .preset-1200x644 .s5-quote-text {
       font-size: 15px;
       line-height: 1.38;
       letter-spacing: -0.15px;
@@ -193,18 +193,139 @@ export const generalPostTemplate: GraphicTemplate = {
       text-align: center;
     }
 
-    .preset-1200x627 .bottom {
+    .preset-1200x644 .bottom {
       left: 96px;
       right: 48px;
       bottom: 34px;
     }
 
-    .preset-1200x627 .publisher {
+    .preset-1200x644 .publisher {
       font-size: 11px;
     }
 
-    .preset-1200x627 .brand {
+    .preset-1200x644 .brand {
       font-size: 16px;
+    }
+
+    .preset-600x322 .tag {
+      top: 29px;
+      left: 48px;
+      gap: 5px;
+    }
+
+    .preset-600x322 .tag-dot {
+      width: 4px;
+      height: 4px;
+    }
+
+    .preset-600x322 .tag-text {
+      font-size: 6px;
+      letter-spacing: 1.75px;
+    }
+
+    .preset-600x322 .badge {
+      top: 24px;
+      right: 36px;
+      padding: 4px 10px;
+      font-size: 6px;
+      letter-spacing: 1px;
+    }
+
+    .preset-600x322 .s5-topic {
+      top: 49px;
+      left: 48px;
+      transform: none;
+    }
+
+    .preset-600x322 .s5-topic-pill {
+      padding: 3px 8px;
+      font-size: 6px;
+      letter-spacing: 1px;
+      border-radius: 15px;
+    }
+
+    .preset-600x322 .s5-title {
+      top: 75px;
+      left: 48px;
+      right: auto;
+      width: 310px;
+      max-width: none;
+      margin: 0;
+      font-size: 27px;
+      line-height: 1.03;
+      letter-spacing: -0.55px;
+      text-align: left;
+      max-height: 105px;
+    }
+
+    .preset-600x322 .s5-rule {
+      top: 180px;
+      left: 48px;
+      transform: none;
+    }
+
+    .preset-600x322 .rule {
+      width: 32px;
+      height: 1px;
+    }
+
+    .preset-600x322 .s5-body {
+      top: 193px;
+      left: 48px;
+      right: auto;
+      width: 260px;
+      max-width: none;
+      margin: 0;
+      font-size: 9px;
+      line-height: 1.45;
+      text-align: left;
+    }
+
+    .preset-600x322 .s5-body:empty {
+      display: none;
+    }
+
+    .preset-600x322 .s5-panel {
+      width: 140px;
+    }
+
+    .preset-600x322 .s5-quote {
+      right: 12px;
+      width: 85px;
+      top: 51%;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .preset-600x322 .s5-quote-mark {
+      font-size: 31px;
+      margin-bottom: 3px;
+    }
+
+    .preset-600x322 .s5-quote-text {
+      font-size: 7.5px;
+      line-height: 1.38;
+      letter-spacing: -0.08px;
+      max-width: 85px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .preset-600x322 .bottom {
+      left: 48px;
+      right: 24px;
+      bottom: 17px;
+      padding-top: 11px;
+    }
+
+    .preset-600x322 .publisher {
+      font-size: 6px;
+    }
+
+    .preset-600x322 .brand {
+      font-size: 8px;
     }
   `,
   fields: [

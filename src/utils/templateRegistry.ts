@@ -11,6 +11,10 @@ import type {
 } from '../types';
 import { getPresetById } from './presets';
 
+const LEGACY_PRESET_ID_MIGRATIONS: Record<string, string> = {
+  '1200x627': '1200x644',
+};
+
 function getFieldOptions(field: TemplateField, values: FieldValues) {
   if (field.dependsOn && field.optionGroups) {
     return field.optionGroups[values[field.dependsOn]] ?? field.options ?? [];
@@ -158,6 +162,11 @@ export function mergeTemplateFieldValues(
 export function ensureCompatiblePresetId(template: GraphicTemplate, presetId: string): string {
   if (template.supportedPresetIds.includes(presetId)) {
     return presetId;
+  }
+
+  const migratedPresetId = LEGACY_PRESET_ID_MIGRATIONS[presetId];
+  if (migratedPresetId && template.supportedPresetIds.includes(migratedPresetId)) {
+    return migratedPresetId;
   }
 
   return template.supportedPresetIds[0] ?? DEFAULT_PRESET_ID;
