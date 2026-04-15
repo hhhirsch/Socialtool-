@@ -8,6 +8,9 @@ export const EXPORT_ROOT_SELECTOR = `#${EXPORT_ROOT_ID}[data-export-root="true"]
  */
 export function applyPresetClassToHtml(documentHtml: string, presetId: string): string {
   const presetClass = `preset-${presetId}`;
+  if (typeof DOMParser === 'undefined') {
+    return documentHtml;
+  }
   const parser = new DOMParser();
   const documentFragment = parser.parseFromString(documentHtml, 'text/html');
 

@@ -8,6 +8,7 @@ import { PreviewFrame } from './PreviewFrame';
 import styles from './PreviewPanel.module.css';
 
 interface Props {
+  /** Full preview document HTML, already prepared with any preset-specific slide classes. */
   documentHtml: string;
   preset: Preset;
   backgroundMode: BackgroundMode;
