@@ -172,7 +172,7 @@ export const generalPostTemplate: GraphicTemplate = {
     .preset-1200x644 .s5-quote {
       --s5-quote-mark-color: rgba(232,184,75,0.18);
       --s5-quote-text-color: rgba(232,184,75,0.92);
-      --s5-quote-text-shadow: 0 1px 10px rgba(15,23,42,0.2);
+      --s5-quote-text-shadow: 0 1px 8px rgba(15,23,42,0.2);
       right: 40px;
       width: 204px;
       top: 50%;
@@ -297,8 +297,8 @@ export const generalPostTemplate: GraphicTemplate = {
 
     .preset-600x322 .s5-quote {
       --s5-quote-mark-color: rgba(232,184,75,0.18);
-      --s5-quote-text-color: rgba(232,184,75,0.9);
-      --s5-quote-text-shadow: 0 1px 8px rgba(15,23,42,0.18);
+      --s5-quote-text-color: rgba(232,184,75,0.92);
+      --s5-quote-text-shadow: 0 1px 8px rgba(15,23,42,0.2);
       right: 18px;
       width: 98px;
       top: 50%;
