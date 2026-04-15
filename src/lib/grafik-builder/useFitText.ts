@@ -9,10 +9,16 @@ const GENERAL_POST_TITLE_DEFAULT = {
   maxHeight: 350,
 };
 
-const GENERAL_POST_TITLE_1200 = {
+const GENERAL_POST_TITLE_WIDE = {
   maxFontSize: 54,
   minFontSize: 24,
   maxHeight: 210,
+};
+
+const GENERAL_POST_TITLE_WIDE_HALF = {
+  maxFontSize: 27,
+  minFontSize: 12,
+  maxHeight: 105,
 };
 
 export function fitTextElement(
@@ -58,10 +64,13 @@ export function applyGeneralPostTitleFit(root: ParentNode): number | null {
   }
 
   const slide = root.querySelector('.slide');
-  const uses1200Preset = isHtmlElement(slide, ownerDocument)
-    ? slide.classList.contains('preset-1200x627')
-    : false;
-  const config = uses1200Preset ? GENERAL_POST_TITLE_1200 : GENERAL_POST_TITLE_DEFAULT;
+  const config = isHtmlElement(slide, ownerDocument)
+    ? slide.classList.contains('preset-600x322')
+      ? GENERAL_POST_TITLE_WIDE_HALF
+      : slide.classList.contains('preset-1200x644')
+        ? GENERAL_POST_TITLE_WIDE
+        : GENERAL_POST_TITLE_DEFAULT
+    : GENERAL_POST_TITLE_DEFAULT;
 
   title.style.maxHeight = `${config.maxHeight}px`;
   title.style.overflow = 'hidden';
