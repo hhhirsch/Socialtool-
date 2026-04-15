@@ -8,6 +8,7 @@ import { PreviewFrame } from './PreviewFrame';
 import styles from './PreviewPanel.module.css';
 
 interface Props {
+  /** Full preview document HTML, already prepared with any preset-specific slide classes. */
   documentHtml: string;
   preset: Preset;
   backgroundMode: BackgroundMode;
@@ -145,13 +146,6 @@ export function PreviewPanel({
         ? styles.transparent
         : styles.white;
 
-  const documentHtmlWithPresetClass = useMemo(() => {
-    const presetClass = `preset-${preset.width}x${preset.height}`;
-    return documentHtml.replace(
-      /class="slide\b/,
-      `class="slide ${presetClass}`
-    );
-  }, [documentHtml, preset.height, preset.width]);
   const hasSlideNavigation = slideCount > 1;
 
   return (
@@ -209,7 +203,7 @@ export function PreviewPanel({
           style={{ width: preset.width * scale, height: preset.height * scale }}
         >
           <PreviewFrame
-            documentHtml={documentHtmlWithPresetClass}
+            documentHtml={documentHtml}
             width={preset.width}
             height={preset.height}
             scale={scale}
