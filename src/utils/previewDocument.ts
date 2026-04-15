@@ -8,17 +8,14 @@ export const EXPORT_ROOT_SELECTOR = `#${EXPORT_ROOT_ID}[data-export-root="true"]
  */
 export function applyPresetClassToHtml(documentHtml: string, presetId: string): string {
   const presetClass = `preset-${presetId}`;
+  const parser = new DOMParser();
+  const documentFragment = parser.parseFromString(documentHtml, 'text/html');
 
-  return documentHtml.replace(
-    /class=(['"])([^'"]*\bslide\b[^'"]*)\1/g,
-    (match, quote: string, classes: string) => {
-      if (classes.split(/\s+/).includes(presetClass)) {
-        return match;
-      }
+  for (const slide of documentFragment.querySelectorAll('.slide')) {
+    slide.classList.add(presetClass);
+  }
 
-      return `class=${quote}${classes} ${presetClass}${quote}`;
-    }
-  );
+  return documentFragment.body.innerHTML;
 }
 
 function buildGraphicStyles(css: string, width: number, height: number): string {
