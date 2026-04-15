@@ -4,7 +4,7 @@ import { exportPng, exportPngSlides, isIOSWebKit } from '../utils/exportPng';
 import { exportPdf } from '../utils/exportPdf';
 import { generateFilename } from '../utils/generateFilename';
 import { copySlideHtml } from '../utils/generateSlideHtml';
-import { buildPreviewDocument } from '../utils/previewDocument';
+import { applyPresetClassToHtml, buildPreviewDocument } from '../utils/previewDocument';
 import { getPresetById } from '../utils/presets';
 import { resolveTemplateSlides } from '../utils/resolveTemplateSlides';
 import { getTemplateById, getTemplatesByCategory } from '../utils/templateRegistry';
@@ -70,6 +70,17 @@ export function AppShell() {
     [selectedTemplate, state.fieldValues]
   );
   const activeSlide = renderedSlides[Math.min(activeSlideIndex, renderedSlides.length - 1)] ?? renderedSlides[0];
+  const renderedSlidesWithPresetClass = useMemo(
+    () =>
+      renderedSlides.map((slide) => ({
+        ...slide,
+        html: applyPresetClassToHtml(slide.html, selectedPreset.id),
+      })),
+    [renderedSlides, selectedPreset.id]
+  );
+  const activeSlideWithPresetClass =
+    renderedSlidesWithPresetClass[Math.min(activeSlideIndex, renderedSlidesWithPresetClass.length - 1)] ??
+    renderedSlidesWithPresetClass[0];
   const isMultiSlideTemplate = renderedSlides.length > 1;
 
   useEffect(() => {
@@ -81,8 +92,14 @@ export function AppShell() {
   }, [renderedSlides.length]);
 
   const previewDocumentHtml = useMemo(
-    () => buildPreviewDocument(activeSlide.html, activeSlide.css, selectedPreset.width, selectedPreset.height),
-    [activeSlide, selectedPreset.height, selectedPreset.width]
+    () =>
+      buildPreviewDocument(
+        activeSlideWithPresetClass.html,
+        activeSlideWithPresetClass.css,
+        selectedPreset.width,
+        selectedPreset.height
+      ),
+    [activeSlideWithPresetClass, selectedPreset.height, selectedPreset.width]
   );
 
   const handleExportPng = useCallback(async () => {
@@ -91,11 +108,13 @@ export function AppShell() {
 
     try {
       await exportPng(
-        activeSlide.html,
-        activeSlide.css,
+        activeSlideWithPresetClass.html,
+        activeSlideWithPresetClass.css,
         selectedPreset.width,
         selectedPreset.height,
-        isMultiSlideTemplate ? activeSlide.filename : generateFilename(selectedPreset, selectedTemplate),
+        isMultiSlideTemplate
+          ? activeSlideWithPresetClass.filename
+          : generateFilename(selectedPreset, selectedTemplate),
         setExportStatus
       );
     } catch (exportError) {
@@ -108,14 +127,19 @@ export function AppShell() {
       setIsExporting(false);
       window.setTimeout(() => setExportStatus(null), EXPORT_STATUS_DISPLAY_DURATION_MS);
     }
-  }, [activeSlide, isMultiSlideTemplate, selectedPreset, selectedTemplate, showError]);
+  }, [activeSlideWithPresetClass, isMultiSlideTemplate, selectedPreset, selectedTemplate, showError]);
 
   const handleExportAllSlides = useCallback(async () => {
     setIsExporting(true);
     setExportStatus('Story-Slides werden erstellt…');
 
     try {
-      await exportPngSlides(renderedSlides, selectedPreset.width, selectedPreset.height, setExportStatus);
+      await exportPngSlides(
+        renderedSlidesWithPresetClass,
+        selectedPreset.width,
+        selectedPreset.height,
+        setExportStatus
+      );
     } catch (exportError) {
       showError(
         `Story-Export fehlgeschlagen: ${
@@ -126,7 +150,7 @@ export function AppShell() {
       setIsExporting(false);
       window.setTimeout(() => setExportStatus(null), EXPORT_STATUS_DISPLAY_DURATION_MS);
     }
-  }, [renderedSlides, selectedPreset.height, selectedPreset.width, showError]);
+  }, [renderedSlidesWithPresetClass, selectedPreset.height, selectedPreset.width, showError]);
 
   const handleCopyHtml = useCallback(async () => {
     try {
