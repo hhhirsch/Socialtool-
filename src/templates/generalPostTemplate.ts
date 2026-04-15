@@ -170,6 +170,9 @@ export const generalPostTemplate: GraphicTemplate = {
     }
 
     .preset-1200x644 .s5-quote {
+      --s5-quote-mark-color: rgba(232,184,75,0.18);
+      --s5-quote-text-color: rgba(232,184,75,0.92);
+      --s5-quote-text-shadow: 0 1px 10px rgba(15,23,42,0.2);
       right: 40px;
       width: 204px;
       top: 50%;
@@ -181,19 +184,19 @@ export const generalPostTemplate: GraphicTemplate = {
 
     .preset-1200x644 .s5-quote-mark {
       font-size: 64px;
-      color: rgba(232,184,75,0.18);
+      color: var(--s5-quote-mark-color);
       margin-bottom: 10px;
     }
 
     .preset-1200x644 .s5-quote-text {
       font-size: 22px;
       line-height: 1.38;
-      color: rgba(232,184,75,0.92);
+      color: var(--s5-quote-text-color);
       letter-spacing: -0.22px;
       max-width: 204px;
       margin: 0 auto;
       text-align: center;
-      text-shadow: 0 1px 10px rgba(15,23,42,0.2);
+      text-shadow: var(--s5-quote-text-shadow);
     }
 
     .preset-1200x644 .bottom {
@@ -293,6 +296,9 @@ export const generalPostTemplate: GraphicTemplate = {
     }
 
     .preset-600x322 .s5-quote {
+      --s5-quote-mark-color: rgba(232,184,75,0.18);
+      --s5-quote-text-color: rgba(232,184,75,0.9);
+      --s5-quote-text-shadow: 0 1px 8px rgba(15,23,42,0.18);
       right: 18px;
       width: 98px;
       top: 50%;
@@ -304,19 +310,19 @@ export const generalPostTemplate: GraphicTemplate = {
 
     .preset-600x322 .s5-quote-mark {
       font-size: 34px;
-      color: rgba(232,184,75,0.18);
+      color: var(--s5-quote-mark-color);
       margin-bottom: 4px;
     }
 
     .preset-600x322 .s5-quote-text {
       font-size: 11px;
       line-height: 1.4;
-      color: rgba(232,184,75,0.9);
+      color: var(--s5-quote-text-color);
       letter-spacing: -0.1px;
       max-width: 98px;
       margin: 0 auto;
       text-align: center;
-      text-shadow: 0 1px 8px rgba(15,23,42,0.18);
+      text-shadow: var(--s5-quote-text-shadow);
     }
 
     .preset-600x322 .bottom {
